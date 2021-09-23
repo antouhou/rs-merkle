@@ -1,4 +1,4 @@
-use crate::Hasher;
+use crate::{Hasher, utils};
 
 pub struct MerkleProof<T> {
     proof_hashes: Vec<Vec<u8>>,
@@ -10,5 +10,16 @@ impl<T: Hasher> MerkleProof<T> {
         MerkleProof {
             proof_hashes, hasher: hasher.clone()
         }
+    }
+
+    pub fn proof_hashes(&self) -> &Vec<Vec<u8>> {
+        &self.proof_hashes
+    }
+
+    pub fn hex_proof_hashes(&self) -> Vec<String> {
+        self.proof_hashes
+            .iter()
+            .map(utils::collections::to_hex_string)
+            .collect()
     }
 }
