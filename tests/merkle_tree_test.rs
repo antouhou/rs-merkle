@@ -9,8 +9,7 @@ pub mod root {
         let test_data = common::setup();
 
         let merkle_tree = MerkleTree::new(test_data.leaf_hashes.to_vec(), test_data.test_hasher.clone());
-        let root = merkle_tree.get_root();
-        let hex_root = utils::collections::to_hex_string(&root.unwrap());
+        let hex_root = merkle_tree.hex_root().unwrap();
 
         assert_eq!(hex_root, test_data.expected_root_hex);
     }
@@ -26,7 +25,7 @@ pub mod tree_depth {
 
         let merkle_tree = MerkleTree::new(test_data.leaf_hashes.to_vec(), test_data.test_hasher.clone());
 
-        let depth = merkle_tree.get_depth();
+        let depth = merkle_tree.depth();
         assert_eq!(depth, 3)
     }
 }
@@ -46,7 +45,7 @@ pub mod proof {
         ];
 
         let merkle_tree = MerkleTree::new(test_data.leaf_hashes.to_vec(), test_data.test_hasher.clone());
-        let proof = merkle_tree.get_proof(&indices_to_prove);
+        let proof = merkle_tree.proof(&indices_to_prove);
         let proof_hashes = proof.hex_proof_hashes();
 
         assert_eq!(proof_hashes, expected_proof_hashes)

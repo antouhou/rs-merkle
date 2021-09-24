@@ -1,17 +1,18 @@
-use std::collections::HashSet;
+fn byte_to_hex(byte: &u8) -> String {
+    format!("{:02x}", byte)
+}
 
 pub fn to_hex_string(bytes: &Vec<u8>) -> String {
     let hex_vec: Vec<String> = bytes
         .iter()
-        .map(|b| format!("{:02x}", b))
+        .map(byte_to_hex)
         .collect();
 
     hex_vec.join("")
 }
 
+// IMPORTANT! This function doesn't use HashSet because for the tree
+// it is important to maintain original order
 pub fn difference(a: &Vec<usize>, b: &Vec<usize>) -> Vec<usize> {
-    let a: HashSet<usize> = a.iter().cloned().collect();
-    let b: HashSet<usize> = b.iter().cloned().collect();
-
-    a.difference(&b).cloned().collect()
+    a.iter().cloned().filter(|x| !b.contains(x)).collect()
 }
