@@ -7,3 +7,7 @@ edition = "2018"
 
 [dependencies]
 sha2 = "0.9.8"
+
+# standard crate data is left out
+[dev-dependencies]
+rayon = "1.5.1"

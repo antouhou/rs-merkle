@@ -1,22 +1,22 @@
 use crate::{utils, MerkleProof, Hasher};
 use crate::utils::indices::parent_indices;
 
-pub struct MerkleTree<T> {
-    layers: Vec<Vec<Vec<u8>>>,
-    hasher: T,
+#[derive(Clone)]
+pub struct MerkleTree<T: Hasher> {
+    layers: Vec<Vec<T::Hash>>,
 }
 
 impl<T: Hasher> MerkleTree<T> {
-    fn build_parent_layer(nodes: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+    fn build_parent_layer(nodes: &Vec<T::Hash>) -> Vec<T::Hash> {
         let parent_layer_nodes_count = utils::indices::div_ceil(nodes.len(),2);
         (0..parent_layer_nodes_count)
             .map(|i| T::concat_and_hash(nodes.get(i * 2), nodes.get(i * 2 + 1)))
             .collect()
     }
 
-    fn build_tree(leaf_hashes: Vec<Vec<u8>>) -> Vec<Vec<Vec<u8>>> {
-        let tree_depth = utils::indices::tree_depth(leaf_hashes.len());
-        let mut tree = vec![leaf_hashes];
+    fn build_tree(leaves: &Vec<T::Hash>) -> Vec<Vec<T::Hash>> {
+        let tree_depth = utils::indices::tree_depth(leaves.len());
+        let mut tree: Vec<Vec<T::Hash>> = vec![leaves.clone()];
 
         for _ in 0..tree_depth {
             // Using unwrap is fine here, since tree always has at least one element
@@ -26,12 +26,12 @@ impl<T: Hasher> MerkleTree<T> {
         tree
     }
 
-    pub fn new(leaf_hashes: Vec<Vec<u8>>, hasher: T) -> Self {
-        let layers = Self::build_tree(leaf_hashes);
-        Self { layers, hasher }
+    pub fn new(leaves: &Vec<T::Hash>) -> Self {
+        let layers = Self::build_tree(leaves);
+        Self { layers }
     }
 
-    pub fn root(&self) -> Option<&Vec<u8>> {
+    pub fn root(&self) -> Option<&T::Hash> {
         self.layers.last()?.first()
     }
 
@@ -40,19 +40,23 @@ impl<T: Hasher> MerkleTree<T> {
         Some(utils::collections::to_hex_string(root))
     }
 
+    /// Returns tree depth. Tree depth is how many layers there is between
+    /// leaves and root
     pub fn depth(&self) -> usize {
-        return self.layers.len() - 1;
+        self.layers.len() - 1
     }
 
+    /// Proof consists of all siblings hashes that aren't in the set we're trying to prove
+    ///
+    /// # Implementation
+    ///
+    /// 1. Get all sibling indices. Those are the indices we need to get to the root
+    /// 2. Filter all nodes that doesn't require an additional hash
+    /// 3. Get all hashes for indices from step 2
+    /// 4. Remove empty spaces (the leftmost nodes that do not have anything to the right)
     pub fn proof(&self, leaf_indices: &Vec<usize>) -> MerkleProof<T> {
-        // Proof consists of all siblings hashes that aren't in the set we're trying to prove
-        // 1. Get all sibling indices. Those are the indices we need to get to the root
-        // 2. Filter all nodes that doesn't require an additional hash
-        // 3. Get all hashes for indices from step 2
-        // 4. Remove empty spaces (the leftmost nodes that do not have anything to the right)7
-
         let mut current_layer_indices = leaf_indices.to_vec();
-        let mut proof_hashes: Vec<Vec<u8>> = Vec::new();
+        let mut proof_hashes: Vec<T::Hash> = Vec::new();
 
         for tree_layer in &self.layers {
             let siblings = utils::indices::sibling_indices(&current_layer_indices);
@@ -60,7 +64,9 @@ impl<T: Hasher> MerkleTree<T> {
 
             for index in proof_indices {
                 match tree_layer.get(index) {
-                    Some(hash) => proof_hashes.push(hash.to_vec()),
+                    Some(hash) => {
+                        proof_hashes.push(hash.clone());
+                    },
                     None => continue,
                 }
             }
@@ -68,11 +74,16 @@ impl<T: Hasher> MerkleTree<T> {
             current_layer_indices = parent_indices(&current_layer_indices);
         }
 
-        MerkleProof::new(proof_hashes, &self.hasher)
+        let proof: MerkleProof<T> = MerkleProof::<T>::new(proof_hashes);
+        proof
     }
 
-    pub fn layers(&self) -> &Vec<Vec<Vec<u8>>> {
-        return &self.layers;
+    pub fn leaves(&self) -> Option<&Vec<T::Hash>> {
+        self.layers().first()
+    }
+
+    pub fn layers(&self) -> &Vec<Vec<T::Hash>> {
+        &self.layers
     }
 
     pub fn hex_layers(&self) -> Vec<Vec<String>> {
