@@ -5,42 +5,37 @@ use crate::{Hasher, utils};
 pub use crate::error::Error;
 pub use crate::error::ErrorKind;
 
+/// `MerkleProof` is used to parse, verify, calculate a root for merkle proofs.
+///
+/// # Usage
+///
+/// MerkleProof requires specifying hashing algorithm and hash size in order to work.
+/// Check out the `Hasher` trait for examples. rs_merkle provides some built in `Hasher`
+/// implementations, for example `rs_merkle::algorithms::Sha256`
+///
+/// # Example
+///
+/// ```
+/// use rs_merkle::{MerkleProof, algorithms::Sha256};
+/// let proof_hashes: Vec<[u8; 32]> = vec![
+///
+/// ];
+///
+/// let proof = MerkleProof::<Sha256>::new(proof_hashes);
+///```
 pub struct MerkleProof<T: Hasher> {
     proof_hashes: Vec<T::Hash>,
-    _hasher: PhantomData<T>,
 }
 
 impl<T: Hasher> MerkleProof<T> {
-    /// MerkleProof requires specifying hashing algorithm and hash size in order to work.
-    /// It uses Hasher trait from the crate to do that. An sha256 implementation of Hasher
-    /// could look like this:
-    /// ```
-    /// use rs_merkle::Hasher;
-    /// use sha2::{Sha256, Digest, digest::FixedOutput};
-    ///
-    /// #[derive(Clone)]
-    /// pub struct Sha256Hasher {}
-    ///
-    /// impl Hasher for Sha256Hasher {
-    ///     // The size of sha256 is 32 bytes
-    ///     type Hash = [u8; 32];
-    ///
-    ///     fn hash(data: &Vec<u8>) -> [u8; 32] {
-    ///         let mut hasher = Sha256::new();
-    ///
-    ///         hasher.update(data);
-    ///         <[u8; 32]>::from(hasher.finalize_fixed())
-    ///     }
-    /// }
-    /// ```
     pub fn new(proof_hashes: Vec<T::Hash>) -> Self {
         MerkleProof {
             proof_hashes,
-            _hasher: PhantomData
         }
     }
 
     /// Parses proof serialized as bytes
+    ///
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
         let hash_size = T::hash_size();
 
@@ -68,6 +63,7 @@ impl<T: Hasher> MerkleProof<T> {
         Ok(Self::new(proof_hashes_slices))
     }
 
+    /// Returns
     pub fn proof_hashes(&self) -> &Vec<T::Hash> {
         &self.proof_hashes
     }

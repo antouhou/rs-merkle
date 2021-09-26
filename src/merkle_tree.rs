@@ -1,6 +1,7 @@
 use crate::{utils, MerkleProof, Hasher};
 use crate::utils::indices::parent_indices;
 
+/// `MerkleTree`
 #[derive(Clone)]
 pub struct MerkleTree<T: Hasher> {
     layers: Vec<Vec<T::Hash>>,
@@ -26,15 +27,18 @@ impl<T: Hasher> MerkleTree<T> {
         tree
     }
 
+    /// Takes leaves (item hashes) as an argument and build a Merkle Tree from them
     pub fn new(leaves: &Vec<T::Hash>) -> Self {
         let layers = Self::build_tree(leaves);
         Self { layers }
     }
 
+    /// Returns Merkle tree root
     pub fn root(&self) -> Option<&T::Hash> {
         self.layers.last()?.first()
     }
 
+    /// Returns Merkle tree root serialized as a hex string
     pub fn hex_root(&self) -> Option<String> {
         let root = self.root()?;
         Some(utils::collections::to_hex_string(root))
@@ -46,20 +50,14 @@ impl<T: Hasher> MerkleTree<T> {
         self.layers.len() - 1
     }
 
-    /// Proof consists of all siblings hashes that aren't in the set we're trying to prove
-    ///
-    /// # Implementation
-    ///
-    /// 1. Get all sibling indices. Those are the indices we need to get to the root
-    /// 2. Filter all nodes that doesn't require an additional hash
-    /// 3. Get all hashes for indices from step 2
-    /// 4. Remove empty spaces (the leftmost nodes that do not have anything to the right)
+    /// Returns merkle proof required to prove inclusion of items at given indices
     pub fn proof(&self, leaf_indices: &Vec<usize>) -> MerkleProof<T> {
         let mut current_layer_indices = leaf_indices.to_vec();
-        let mut proof_hashes: Vec<T::Hash> = Vec::new();
+        let mut proof_hashes = Vec::<T::Hash>::new();
 
         for tree_layer in &self.layers {
             let siblings = utils::indices::sibling_indices(&current_layer_indices);
+            // Filter all nodes that do not require an additional hash to be calculated
             let proof_indices = utils::collections::difference(&siblings, &current_layer_indices);
 
             for index in proof_indices {
@@ -67,6 +65,8 @@ impl<T: Hasher> MerkleTree<T> {
                     Some(hash) => {
                         proof_hashes.push(hash.clone());
                     },
+                    // This means that there's no right sibling to the current index, thus
+                    // we don't need to include anything in the proof for that index
                     None => continue,
                 }
             }
@@ -78,14 +78,18 @@ impl<T: Hasher> MerkleTree<T> {
         proof
     }
 
+    /// Returns tree leaves, i.e. the bottom level
     pub fn leaves(&self) -> Option<&Vec<T::Hash>> {
         self.layers().first()
     }
 
+    /// Returns the whole tree, where the first layer is leaves and
+    /// consequent layers are nodes.
     pub fn layers(&self) -> &Vec<Vec<T::Hash>> {
         &self.layers
     }
 
+    /// Same as `layers`, but serializes each hash as a hex string
     pub fn hex_layers(&self) -> Vec<Vec<String>> {
         self.layers()
             .iter()

@@ -1,8 +1,8 @@
 mod common;
 
 pub mod root {
-    use crate::{common, common::Sha256Hasher};
-    use rs_merkle::{MerkleTree};
+    use crate::common;
+    use rs_merkle::{MerkleTree, algorithms::Sha256};
     use std::time::Instant;
     use rayon::prelude::*;
 
@@ -14,7 +14,7 @@ pub mod root {
         let indices_to_prove = vec![3, 4];
         let leaves_to_prove = indices_to_prove.iter().cloned().map(|i| leaf_hashes.get(i).unwrap().clone()).collect();
 
-        let merkle_tree = MerkleTree::<Sha256Hasher>::new(&test_data.leaf_hashes);
+        let merkle_tree = MerkleTree::<Sha256>::new(&test_data.leaf_hashes);
         let proof = merkle_tree.proof(&indices_to_prove);
         let extracted_root = proof.hex_root(&indices_to_prove, &leaves_to_prove, test_data.leaf_values.len());
 
@@ -27,12 +27,12 @@ pub mod root {
 
         let test_run_started = Instant::now();
         test_cases.par_iter().for_each(|test_case| {
-           let merkle_tree = &test_case.merkle_tree;
+            let merkle_tree = &test_case.merkle_tree;
+            let root = merkle_tree.root().unwrap().clone();
 
             test_case.cases.par_iter().for_each(|case| {
                 let proof = merkle_tree.proof(&case.leaf_indices_to_prove);
-                let root = merkle_tree.hex_root().unwrap();
-                let extracted_root = proof.hex_root(&case.leaf_indices_to_prove, &case.leaf_hashes_to_prove, merkle_tree.leaves().unwrap().len());
+                let extracted_root = proof.root(&case.leaf_indices_to_prove, &case.leaf_hashes_to_prove, merkle_tree.leaves().unwrap().len());
 
                 assert_eq!(extracted_root, root)
             });
@@ -42,8 +42,8 @@ pub mod root {
 }
 
 pub mod to_bytes {
-    use crate::{common, common::Sha256Hasher};
-    use rs_merkle::MerkleTree;
+    use crate::common;
+    use rs_merkle::{MerkleTree, algorithms::Sha256};
 
     #[test]
     pub fn should_correctly_serialize_to_bytes() {
@@ -60,7 +60,7 @@ pub mod to_bytes {
 
         let test_data = common::setup();
         let indices_to_prove = vec![3, 4];
-        let merkle_tree = MerkleTree::<Sha256Hasher>::new(&test_data.leaf_hashes);
+        let merkle_tree = MerkleTree::<Sha256>::new(&test_data.leaf_hashes);
         let proof = merkle_tree.proof(&indices_to_prove);
 
         let bytes = proof.to_bytes();
@@ -70,8 +70,8 @@ pub mod to_bytes {
 }
 
 pub mod from_bytes {
-    use rs_merkle::MerkleProof;
-    use crate::common::Sha256Hasher;
+    use rs_merkle::{MerkleProof, algorithms::Sha256};
+    use crate::common;
 
     #[test]
     pub fn should_return_result_with_proof() {
@@ -92,7 +92,7 @@ pub mod from_bytes {
             151, 121, 247, 157, 196, 163, 215, 233,  57,  99, 249,  74
         ];
 
-        let proof = MerkleProof::<Sha256Hasher>::from_bytes(bytes).unwrap();
+        let proof = MerkleProof::<Sha256>::from_bytes(bytes).unwrap();
         let hex_hashes = proof.hex_proof_hashes();
 
         assert_eq!(hex_hashes, expected_proof_hashes);
@@ -110,7 +110,7 @@ pub mod from_bytes {
             72, 113,  79,  34,  24,  15,  37, 173, 131, 101, 181,  63,
         ];
 
-        let err = MerkleProof::<Sha256Hasher>::from_bytes(bytes).err().unwrap();
+        let err = MerkleProof::<Sha256>::from_bytes(bytes).err().unwrap();
 
         assert_eq!(err.message(), "Proof of size 84 bytes can not be divided into chunks of 32 bytes");
     }
