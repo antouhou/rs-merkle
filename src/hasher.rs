@@ -46,14 +46,14 @@ pub trait Hasher {
 
     /// Used by `MerkleTree` and `MerkleProof` when calculating the root.
     /// The provided default implementation follows propagates left node if it doesn't
-    /// have a sibling.
+    /// have a sibling. Left node should always be present. Right node is optional.
     ///
     /// For the tree to be compatible with different types of proofs this function
     /// needs to be overridden. For example, in Bitcoin implementation,
     /// if the left node doesn't have a sibling it is concatenated to itself and
     /// then hashed instead of just being propagated to the next level.
-    fn concat_and_hash(left: Option<&Self::Hash>, right: Option<&Self::Hash>) -> Self::Hash {
-        let mut concatenated: Vec<u8> = left.expect("Left node should always be present, otherwise it's impossible to calculate hash").clone().into();
+    fn concat_and_hash(left: &Self::Hash, right: Option<&Self::Hash>) -> Self::Hash {
+        let mut concatenated: Vec<u8> = left.clone().into();
 
         match right {
             Some(right_node) => {
@@ -61,7 +61,7 @@ pub trait Hasher {
                 concatenated.append(&mut right_node_clone);
                 Self::hash(&concatenated)
             },
-            None => left.unwrap().clone()
+            None => left.clone()
         }
     }
 

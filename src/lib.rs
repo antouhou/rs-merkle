@@ -12,6 +12,7 @@ pub use merkle_tree::MerkleTree;
 
 mod merkle_tree;
 mod merkle_proof;
+mod partial_tree;
 mod hasher;
 
 pub mod algorithms;

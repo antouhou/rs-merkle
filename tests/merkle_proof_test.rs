@@ -2,14 +2,14 @@ mod common;
 
 pub mod root {
     use crate::common;
-    use rs_merkle::{MerkleTree, algorithms::Sha256};
+    use rs_merkle::{MerkleTree, algorithms::Sha256, Hasher};
     use std::time::Instant;
     use rayon::prelude::*;
 
     #[test]
     pub fn should_return_a_correct_root() {
         let test_data = common::setup();
-        let expected_root = &test_data.expected_root_hex;
+        let expected_root = test_data.expected_root_hex.clone();
         let leaf_hashes = &test_data.leaf_hashes;
         let indices_to_prove = vec![3, 4];
         let leaves_to_prove = indices_to_prove.iter().cloned().map(|i| leaf_hashes.get(i).unwrap().clone()).collect();
@@ -18,12 +18,30 @@ pub mod root {
         let proof = merkle_tree.proof(&indices_to_prove);
         let extracted_root = proof.hex_root(&indices_to_prove, &leaves_to_prove, test_data.leaf_values.len());
 
-        assert_eq!(extracted_root, *expected_root);
+        assert_eq!(extracted_root, expected_root);
 
         let test_preparation_started = Instant::now();
         let test_cases = common::setup_proof_test_cases();
         println!("Preparing test cases took {:.2}s", test_preparation_started.elapsed().as_secs_f32());
         let test_cases_count = test_cases.iter().fold(0, |acc, case| acc + case.cases.len());
+
+        // Roots:
+        // 1: ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb
+        // 2: e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a
+        // 3: 7075152d03a5cd92104887b476862778ec0c87be5c2fa1c0a90f87c49fad6eff
+        // 4: 14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7
+        // 5: d71f8983ad4ee170f8129f1ebcdd7440be7798d8e1c80420bf11f1eced610dba
+        // 6: 1f7379539707bcaea00564168d1d4d626b09b73f8a2a365234c62d763f854da2
+        // 7 (g): e2a80e0e872a6c6eaed37b4c1f220e1935004805585b5f99617e48e9c8fe4034
+        // 8 (h): bd7c8a900be9b67ba7df5c78a652a8474aedd78adb5083e80e49d9479138a23f
+        // 9 (k): 09b6890b23e32e607f0e5f670ab224e36af8f6599cbe88b468f4b0f761802dd6
+        // 10: acd9c757c94bde41f98946fe6f5ce5ae567b0f103bd9eeb37421c760c592db1e
+        // 11: 5232b16d412d5902d87a153a3551a22094a634c67695d7f9e215be48b15aa9a3
+        // 12: f64bc461b545975dfe84768c7ebd1d09c536b680819239cb78469b5d3bb182d8
+        // 13: a848a99df01e9c1b938403a30226e770f88d37c4d43e8347356ed6887f7b30a3
+        // 14: 4e4afdcec057392d1a735b39f41d4f3ef1cab5637c91f5443996079b3c763538
+        // 15: a2e073232cb6285fa5f04957dfe6a3238a9dce003908932231174884e5861767
+
 
         let test_run_started = Instant::now();
         test_cases.par_iter().for_each(|test_case| {
@@ -38,6 +56,54 @@ pub mod root {
             });
         });
         println!("{} test cases executed in {:.2}s", test_cases_count, test_run_started.elapsed().as_secs_f32());
+    }
+
+    #[test]
+    pub fn should_give_correct_root_after_commit() {
+        let test_data = common::setup();
+        let expected_root = test_data.expected_root_hex.clone();
+        let leaf_hashes = &test_data.leaf_hashes;
+        // let indices_to_prove = vec![3, 4];
+        // let leaves_to_prove = indices_to_prove.iter().cloned().map(|i| leaf_hashes.get(i).unwrap().clone()).collect();
+        let vec = Vec::<[u8;32]>::new();
+
+        // Passing empty vec to create an empty tree
+        let mut merkle_tree = MerkleTree::<Sha256>::new(&vec);
+        let mut merkle_tree2 = MerkleTree::<Sha256>::new(&leaf_hashes);
+        // Adding leaves
+        merkle_tree.append(leaf_hashes.clone().as_mut());
+        let root = merkle_tree.uncommitted_root_hex().unwrap();
+
+        assert_eq!(merkle_tree2.root_hex().unwrap(), expected_root);
+        assert_eq!(root, expected_root);
+
+        let expected_root = "e2a80e0e872a6c6eaed37b4c1f220e1935004805585b5f99617e48e9c8fe4034";
+        let leaf = Sha256::hash("g".as_bytes().to_vec().as_ref());
+        merkle_tree.insert(leaf);
+
+        assert_eq!(merkle_tree.uncommitted_root_hex().unwrap(), String::from(expected_root));
+
+        // No changes were committed just yet, tree is empty
+        assert_eq!(merkle_tree.root(), None);
+
+        merkle_tree.commit();
+
+        let mut new_leaves = vec![
+            Sha256::hash("h".as_bytes().to_vec().as_ref()),
+            Sha256::hash("k".as_bytes().to_vec().as_ref()),
+        ];
+        merkle_tree.append(&mut new_leaves);
+
+        assert_eq!(merkle_tree.root_hex().unwrap(), String::from("e2a80e0e872a6c6eaed37b4c1f220e1935004805585b5f99617e48e9c8fe4034"));
+        assert_eq!(merkle_tree.uncommitted_root_hex().unwrap(), String::from("09b6890b23e32e607f0e5f670ab224e36af8f6599cbe88b468f4b0f761802dd6"));
+
+        merkle_tree.commit();
+        let leaves = merkle_tree.leaves().unwrap();
+        let reconstructed_tree = MerkleTree::<Sha256>::new(&leaves);
+
+        // Check that the commit is applied correctly
+        assert_eq!(reconstructed_tree.root_hex().unwrap(), String::from("09b6890b23e32e607f0e5f670ab224e36af8f6599cbe88b468f4b0f761802dd6"));
+        assert_eq!(reconstructed_tree.layers(), merkle_tree.layers());
     }
 }
 

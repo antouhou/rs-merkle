@@ -1,9 +1,9 @@
 use std::convert::TryInto;
-use std::marker::PhantomData;
 
 use crate::{Hasher, utils};
-pub use crate::error::Error;
-pub use crate::error::ErrorKind;
+use crate::error::Error;
+use crate::error::ErrorKind;
+use crate::partial_tree::PartialTree;
 
 /// `MerkleProof` is used to parse, verify, calculate a root for merkle proofs.
 ///
@@ -75,55 +75,30 @@ impl<T: Hasher> MerkleProof<T> {
             .collect()
     }
 
-    /// Calculates merkle root bases on provided leaves and proof hashes
+    /// Calculates merkle root based on provided leaves and proof hashes
     pub fn root(&self, leaf_indices: &Vec<usize>, leaf_hashes: &Vec<T::Hash>, total_leaves_count: usize) -> T::Hash {
         // Zipping indices and hashes into a vector of (original_index_in_tree, leaf_hash)
         let mut leaf_tuples: Vec<(usize, T::Hash)> = leaf_indices.iter().cloned().zip(leaf_hashes.iter().cloned()).collect();
         // Sorting leaves by indexes in case they weren't sorted already
         leaf_tuples.sort_by(|(a, _), (b, _)| a.cmp(b));
         // Getting back _sorted_ indices
-        let proof_indices = utils::indices::proof_indices(leaf_indices, total_leaves_count);
+        let proof_indices_by_layers = utils::indices::proof_indices(leaf_indices, total_leaves_count);
 
         let mut proof_layers: Vec<Vec<(usize, T::Hash)>> = Vec::new();
 
         let mut next_slice_start = 0;
-        for indices in proof_indices {
+        for proof_indices in proof_indices_by_layers {
             let slice_start = next_slice_start;
-            next_slice_start += indices.len();
+            next_slice_start += proof_indices.len();
 
-            let hashes = self.proof_hashes.get(slice_start..next_slice_start).unwrap();
-            proof_layers.push(indices.iter().cloned().zip(hashes.iter().cloned()).collect());
+            let proof_hashes = self.proof_hashes.get(slice_start..next_slice_start).unwrap();
+            proof_layers.push(proof_indices.iter().cloned().zip(proof_hashes.iter().cloned()).collect());
         }
 
-        let mut partial_tree = vec![leaf_tuples];
+        // TODO: remove the unwrap!
+        let partial_tree = PartialTree::<T>::new(&leaf_tuples, &proof_layers, proof_layers.len()).unwrap();
 
-        for layer_index in 0..proof_layers.len() {
-            let mut current_layer = partial_tree.get(layer_index).unwrap().clone();
-            let mut current_proofs = proof_layers.get(layer_index).unwrap().clone();
-
-            current_layer.append(&mut current_proofs);
-            current_layer.sort_by(|(a, _), (b, _)| a.cmp(b));
-
-            let (indices, hashes): (Vec<usize>, Vec<T::Hash>) = current_layer.drain(..).unzip();
-            let parent_layer_indices = utils::indices::parent_indices(&indices);
-
-            let parent_layer = parent_layer_indices
-                .iter()
-                .cloned()
-                .enumerate()
-                .map(|(i, parent_node_index)| (
-                    parent_node_index,
-                    T::concat_and_hash(
-                        hashes.get(i * 2),
-                        hashes.get(i * 2 + 1)
-                    ))
-                )
-                .collect();
-
-            partial_tree.push(parent_layer);
-        }
-
-        return partial_tree.last().unwrap().first().unwrap().1.clone();
+        return partial_tree.root().unwrap().clone();
     }
 
     /// Calculates the root and serializes it into a hex string

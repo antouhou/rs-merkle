@@ -9,7 +9,7 @@ pub mod root {
         let test_data = common::setup();
 
         let merkle_tree = MerkleTree::<Sha256>::new(&test_data.leaf_hashes);
-        let hex_root = merkle_tree.hex_root().unwrap();
+        let hex_root = merkle_tree.root_hex().unwrap();
 
         assert_eq!(hex_root, test_data.expected_root_hex);
     }

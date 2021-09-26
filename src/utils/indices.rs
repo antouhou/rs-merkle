@@ -60,6 +60,7 @@ pub fn uneven_layers(tree_leaves_count: usize) -> Vec<LayerInfo> {
     return uneven_layers;
 }
 
+/// Returns layered proof indices
 pub fn proof_indices(sorted_leaf_indices: &Vec<usize>, leaves_count: usize) -> Vec<Vec<usize>> {
     let depth = tree_depth(leaves_count);
     let uneven_layers = uneven_layers(leaves_count);

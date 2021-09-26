@@ -2,7 +2,8 @@ use std::fmt::{Debug, Formatter, Display};
 
 #[derive(Copy, Clone, Debug)]
 pub enum ErrorKind {
-    SerializedProofSizeIsIncorrect
+    SerializedProofSizeIsIncorrect,
+    NotEnoughHelperNodes
 }
 
 #[derive(Clone, Debug)]
