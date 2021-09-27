@@ -81,7 +81,7 @@ pub fn setup_proof_test_cases() -> Vec<ProofTestCases> {
                 .map(|x| Sha256::hash(x.as_bytes().to_vec().as_ref()))
                 .collect();
 
-            let merkle_tree = MerkleTree::<Sha256>::new(&leaves);
+            let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
 
             let indices = tree_elements
                 .iter()

@@ -25,7 +25,7 @@ use std::mem;
 ///     }
 /// }
 /// ```
-pub trait Hasher {
+pub trait Hasher: Clone {
     /// This type is used as a hash type in the library.
     /// It is recommended to use fixed size u8 array as hash. For example,
     /// for sha256 the type would be `[u8; 32]`, representing 32 bytes,

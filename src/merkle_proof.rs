@@ -96,7 +96,7 @@ impl<T: Hasher> MerkleProof<T> {
         }
 
         // TODO: remove the unwrap!
-        let partial_tree = PartialTree::<T>::new(&leaf_tuples, &proof_layers, proof_layers.len()).unwrap();
+        let partial_tree = PartialTree::<T>::build(&leaf_tuples, &proof_layers, proof_layers.len()).unwrap();
 
         return partial_tree.root().unwrap().clone();
     }

@@ -8,7 +8,7 @@ pub mod root {
     pub fn should_return_a_correct_root() {
         let test_data = common::setup();
 
-        let merkle_tree = MerkleTree::<Sha256>::new(&test_data.leaf_hashes);
+        let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
         let hex_root = merkle_tree.root_hex().unwrap();
 
         assert_eq!(hex_root, test_data.expected_root_hex);
@@ -23,7 +23,7 @@ pub mod tree_depth {
     pub fn should_return_a_correct_tree_depth() {
         let test_data = common::setup();
 
-        let merkle_tree = MerkleTree::<Sha256>::new(&test_data.leaf_hashes);
+        let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
 
         let depth = merkle_tree.depth();
         assert_eq!(depth, 3)
@@ -44,7 +44,7 @@ pub mod proof {
             "e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
         ];
 
-        let merkle_tree = MerkleTree::<Sha256>::new(&test_data.leaf_hashes);
+        let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
         let proof = merkle_tree.proof(&indices_to_prove);
         let proof_hashes = proof.hex_proof_hashes();
 

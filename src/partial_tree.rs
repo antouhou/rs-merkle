@@ -12,21 +12,24 @@ pub struct PartialTree<T: Hasher> {
 impl<T: Hasher> PartialTree<T> {
     /// Takes leaves (item hashes) as an argument and build a Merkle Tree from them.
     /// Since it's a partial tree, hashes must be accompanied by their index in the original tree.
-    ///
-    pub fn new(leaves: &Vec<(usize, T::Hash)>, helper_nodes: &Vec<Vec<(usize, T::Hash)>>, depth: usize) -> Result<Self, Error> {
-        let layers = Self::build_tree(leaves, helper_nodes, depth)?;
-        Ok(Self { layers })
+    pub fn new() -> Self {
+        Self { layers: Vec::new() }
     }
 
     /// This is a helper function to build a full tree from a full set of leaves without any
     /// helper indices
     pub fn from_leaves(leaves: &Vec<T::Hash>) -> Result<Self, Error> {
         let tuples = leaves.iter().cloned().enumerate().collect();
-        Self::new(
+        Self::build(
             &tuples,
             Vec::new().as_ref(),
             utils::indices::tree_depth(leaves.len())
         )
+    }
+
+    pub fn build(leaves: &Vec<(usize, T::Hash)>, helper_nodes: &Vec<Vec<(usize, T::Hash)>>, depth: usize) -> Result<Self, Error> {
+        let layers = Self::build_tree(leaves, helper_nodes, depth)?;
+        Ok(Self { layers })
     }
 
     /// This is a general algorithm for building a partial tree. It can be used to extract root
@@ -157,5 +160,10 @@ impl<T: Hasher> PartialTree<T> {
     /// Returns partial tree layers
     pub fn layers(&self) -> &Vec<Vec<(usize, T::Hash)>> {
         &self.layers
+    }
+
+    /// Clears all elements in the ree
+    pub fn clear(&mut self) {
+        self.layers.clear();
     }
 }
