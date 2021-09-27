@@ -8,7 +8,7 @@ license = "Apache-2.0/MIT"
 repository = "https://github.com/antouhou/rs-merkle"
 documentation = "https://docs.rs/rs_merkle/"
 readme = "README.md"
-keywords = ["merkle", "merkle tree", "merkle proof", "hash tree", "multiproof", "multi proof", "bitcoin", "ethereum", "solidity", 'git']
+keywords = ["merkle", "tree", "proof", "hash", "multiproof", "multi-proof", "bitcoin", "ethereum", "solidity", 'git']
 categories = ["concurrency"]
 exclude = ["/ci/*", "/scripts/*", "/.github/*", "/bors.toml"]
 
