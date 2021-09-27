@@ -8,8 +8,7 @@ license = "Apache-2.0/MIT"
 repository = "https://github.com/antouhou/rs-merkle"
 documentation = "https://docs.rs/rs_merkle/"
 readme = "README.md"
-keywords = ["merkle", "tree", "proof", "hash", "multiproof", "multi-proof", "bitcoin", "ethereum", "solidity", 'git']
-categories = ["concurrency"]
+keywords = ["merkle", "tree", "proof", "hash", "multiproof",]
 exclude = ["/ci/*", "/scripts/*", "/.github/*", "/bors.toml"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
