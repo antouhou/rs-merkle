@@ -1,5 +1,5 @@
 use crate::{utils, MerkleProof, Hasher};
-use crate::utils::indices::{parent_indices, proof_indices};
+use crate::utils::indices::{parent_indices, proof_indices_by_layers};
 use crate::partial_tree::PartialTree;
 
 /// [`MerkleTree`] is a Merkle Tree that is well suited for both basic and advanced usage.
@@ -159,6 +159,8 @@ impl<T: Hasher> MerkleTree<T> {
         helper_nodes
     }
 
+    /// Gets all helper nodes required to build a partial merkle tree for the given indices,
+    /// cloning all required hashes into the resulting vector.
     fn helper_node_tuples(&self, leaf_indices: &Vec<usize>) -> Vec<Vec<(usize, T::Hash)>> {
         let mut current_layer_indices = leaf_indices.to_vec();
         let mut helper_nodes: Vec<Vec<(usize, T::Hash)>> = Vec::new();
@@ -277,8 +279,8 @@ impl<T: Hasher> MerkleTree<T> {
         let shadow_indices: Vec<usize> = self.uncommitted_leaves.iter().enumerate().map(|(index, _)| index).collect();
         // Tuples (index, hash) needed to construct a partial tree, since partial tree can't
         // maintain indices otherwise
-        let shadow_node_tuples: Vec<(usize, T::Hash)> = shadow_indices.iter().cloned().zip(self.uncommitted_leaves.iter().cloned()).collect();
-        let helper_node_tuples = self.helper_node_tuples(&shadow_indices);
+        let mut shadow_node_tuples: Vec<(usize, T::Hash)> = shadow_indices.iter().cloned().zip(self.uncommitted_leaves.iter().cloned()).collect();
+        let mut partial_tree_tuples = self.helper_node_tuples(&shadow_indices);
 
         // Figuring what tree height would be if we've committed the changes
         let mut leaves_in_new_tree = self.uncommitted_leaves.len();
@@ -287,7 +289,15 @@ impl<T: Hasher> MerkleTree<T> {
         }
         let uncommitted_tree_depth = utils::indices::tree_depth(leaves_in_new_tree);
 
-        // Building a partial tree with the changes that would be needed to committed tree
-        PartialTree::<T>::build(&shadow_node_tuples, &helper_node_tuples, uncommitted_tree_depth).ok()
+        match partial_tree_tuples.first_mut() {
+            Some(first_layer) => {
+                first_layer.append(&mut shadow_node_tuples);
+                first_layer.sort_by(|(a, _), (b, _)| a.cmp(b));
+            },
+            None => partial_tree_tuples.push(shadow_node_tuples)
+        }
+
+        // Building a partial tree with the changes that would be needed to the working tree
+        PartialTree::<T>::build(partial_tree_tuples, uncommitted_tree_depth).ok()
     }
 }

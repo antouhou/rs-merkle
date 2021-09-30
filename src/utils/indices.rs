@@ -1,4 +1,5 @@
 use crate::utils;
+use std::collections::{HashMap};
 
 pub struct LayerInfo {
     index: usize,
@@ -36,32 +37,36 @@ pub fn parent_indices(indices: &Vec<usize>) -> Vec<usize> {
 }
 
 pub fn tree_depth(leaves_count: usize) -> usize {
-    (leaves_count as f64).log2().ceil() as usize
+    if leaves_count == 1 {
+        1
+    } else {
+        (leaves_count as f64).log2().ceil() as usize
+    }
 }
 
 pub fn max_leaves_count_at_depth(depth: usize) -> usize {
     return (2 as u32).pow(depth as u32) as usize;
 }
 
-pub fn uneven_layers(tree_leaves_count: usize) -> Vec<LayerInfo> {
+pub fn uneven_layers(tree_leaves_count: usize) -> HashMap<usize, usize> {
     let mut leaves_count = tree_leaves_count;
     let depth = tree_depth(tree_leaves_count);
-    
-    let mut uneven_layers = Vec::new();
-    
+
+    let mut uneven_layers = HashMap::new();
+
     for index in 0..depth {
         let uneven_layer = leaves_count % 2 != 0;
         if uneven_layer {
-            uneven_layers.push(LayerInfo { index, leaves_count });
+            uneven_layers.insert(index, leaves_count.clone());
         }
         leaves_count = div_ceil(leaves_count, 2);
     }
-    
+
     return uneven_layers;
 }
 
 /// Returns layered proof indices
-pub fn proof_indices(sorted_leaf_indices: &Vec<usize>, leaves_count: usize) -> Vec<Vec<usize>> {
+pub fn proof_indices_by_layers(sorted_leaf_indices: &Vec<usize>, leaves_count: usize) -> Vec<Vec<usize>> {
     let depth = tree_depth(leaves_count);
     let uneven_layers = uneven_layers(leaves_count);
 
@@ -69,16 +74,18 @@ pub fn proof_indices(sorted_leaf_indices: &Vec<usize>, leaves_count: usize) -> V
     let mut proof_indices: Vec<Vec<usize>> = Vec::new();
 
     for layer_index in 0..depth {
-        let sibling_indices = sibling_indices(&layer_nodes);
+        let mut sibling_indices = sibling_indices(&layer_nodes);
+        // The last node of that layer doesn't have another hash to the right, so no need to include
+        // that index
+        if let Some(leaves_count) = uneven_layers.get(&layer_index) {
+            if layer_nodes.last().unwrap() == &(leaves_count - 1) {
+                sibling_indices.pop();
+            }
+        }
+
         // Figuring out indices that are already siblings and do not require additional hash
         // to calculate the parent
-        let mut proof_nodes_indices = utils::collections::difference(&sibling_indices, &layer_nodes);
-
-        // The last node of that layer doesn't have another hash to the right
-        let uneven_layer = uneven_layers.iter().find(|layer_info| layer_info.index == layer_index);
-        if uneven_layer.is_some() && layer_nodes.contains(&(uneven_layer.unwrap().leaves_count - 1)) {
-            proof_nodes_indices.pop();
-        }
+        let proof_nodes_indices = utils::collections::difference(&sibling_indices, &layer_nodes);
 
         proof_indices.push(proof_nodes_indices);
         // Passing parent nodes indices to the next iteration cycle

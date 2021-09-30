@@ -17,6 +17,13 @@ impl Error {
         Self { kind, message }
     }
 
+    pub fn not_enough_helper_nodes() -> Self {
+        Self::new(
+            ErrorKind::NotEnoughHelperNodes,
+            String::from("Not enough hashes to reconstruct the root")
+        )
+    }
+
     pub fn kind(&self) -> ErrorKind {
         self.kind
     }

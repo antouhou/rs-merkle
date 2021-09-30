@@ -19,30 +19,39 @@ impl<T: Hasher> PartialTree<T> {
     /// This is a helper function to build a full tree from a full set of leaves without any
     /// helper indices
     pub fn from_leaves(leaves: &Vec<T::Hash>) -> Result<Self, Error> {
-        let tuples = leaves.iter().cloned().enumerate().collect();
+        let leaf_tuples: Vec<(usize, T::Hash)> = leaves.iter().cloned().enumerate().collect();
+
         Self::build(
-            &tuples,
-            Vec::new().as_ref(),
+            vec![leaf_tuples],
             utils::indices::tree_depth(leaves.len())
         )
     }
 
-    pub fn build(leaves: &Vec<(usize, T::Hash)>, helper_nodes: &Vec<Vec<(usize, T::Hash)>>, depth: usize) -> Result<Self, Error> {
-        let layers = Self::build_tree(leaves, helper_nodes, depth)?;
+    pub fn build(partial_layers: Vec<Vec<(usize, T::Hash)>>, depth: usize) -> Result<Self, Error> {
+        let layers = Self::build_tree(partial_layers, depth)?;
         Ok(Self { layers })
     }
 
     /// This is a general algorithm for building a partial tree. It can be used to extract root
     /// from merkle proof, or if a complete set of leaves provided as a first argument and no
     /// helper indices given, will construct the whole tree.
-    fn build_tree(leaves_part: &Vec<(usize, T::Hash)>, helper_layers: &Vec<Vec<(usize, T::Hash)>>, full_tree_depth: usize) -> Result<Vec<Vec<(usize, T::Hash)>>, Error> {
+    fn build_tree(mut partial_layers: Vec<Vec<(usize, T::Hash)>>, full_tree_depth: usize) -> Result<Vec<Vec<(usize, T::Hash)>>, Error> {
         let mut partial_tree: Vec<Vec<(usize, T::Hash)>> = Vec::new();
-        let mut current_layer = leaves_part.clone();
+        let mut current_layer = Vec::new();
 
-        for layer_index in 0..full_tree_depth {
+        // Reversing helper nodes, so we can remove one layer starting from 0 each iteration
+        let mut reversed_layers: Vec<Vec<(usize, T::Hash)>> = partial_layers.drain(..).rev().collect();
+
+        // This iterates to full_tree_depth and not to the partial_layers_len because
+        // when constructing
+
+        // It is iterating to full_tree_depth instead of partial_layers.len to address the case
+        // of applying changes to a tree when tree requires a resize, and partial layer len
+        // in that case going to be lower that the resulting tree depth
+        for _ in 0..full_tree_depth {
             // Appending helper nodes to the current known nodes
-            if let Some(helpers) = helper_layers.get(layer_index) {
-                current_layer.append(helpers.clone().as_mut());
+            if let Some(mut nodes) = reversed_layers.pop() {
+                current_layer.append(&mut nodes);
             }
             current_layer.sort_by(|(a, _), (b, _)| a.cmp(b));
 
@@ -58,15 +67,10 @@ impl<T: Hasher> PartialTree<T> {
                     // Populate `current_layer` back for the next iteration
                     Some(left_node) => current_layer.push((
                         parent_node_index.clone(),
-                        T::concat_and_hash(
-                            left_node,
-                            nodes.get(i * 2 + 1)
+                        T::concat_and_hash(left_node, nodes.get(i * 2 + 1)
                         )
                     )),
-                    None => return Err(Error::new(
-                        ErrorKind::NotEnoughHelperNodes,
-                        String::from("Not enough hashes to reconstruct the root")
-                    ))
+                    None => return Err(Error::not_enough_helper_nodes())
                 }
             }
         }

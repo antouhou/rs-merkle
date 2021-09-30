@@ -77,26 +77,33 @@ impl<T: Hasher> MerkleProof<T> {
 
     /// Calculates merkle root based on provided leaves and proof hashes
     pub fn root(&self, leaf_indices: &Vec<usize>, leaf_hashes: &Vec<T::Hash>, total_leaves_count: usize) -> T::Hash {
+        let tree_depth = utils::indices::tree_depth(total_leaves_count);
+
         // Zipping indices and hashes into a vector of (original_index_in_tree, leaf_hash)
         let mut leaf_tuples: Vec<(usize, T::Hash)> = leaf_indices.iter().cloned().zip(leaf_hashes.iter().cloned()).collect();
         // Sorting leaves by indexes in case they weren't sorted already
         leaf_tuples.sort_by(|(a, _), (b, _)| a.cmp(b));
         // Getting back _sorted_ indices
-        let proof_indices_by_layers = utils::indices::proof_indices(leaf_indices, total_leaves_count);
+        let proof_indices_by_layers = utils::indices::proof_indices_by_layers(leaf_indices, total_leaves_count);
 
-        let mut proof_layers: Vec<Vec<(usize, T::Hash)>> = Vec::new();
-
-        let mut next_slice_start = 0;
+        // The next lines copy hashes from proof hashes and group them by layer index
+        let mut proof_layers: Vec<Vec<(usize, T::Hash)>> = Vec::with_capacity(tree_depth);
+        let mut proof_copy = self.proof_hashes.clone();
         for proof_indices in proof_indices_by_layers {
-            let slice_start = next_slice_start;
-            next_slice_start += proof_indices.len();
+            let proof_hashes = proof_copy.splice(0..proof_indices.len(), []);
+            proof_layers.push(proof_indices.iter().cloned().zip(proof_hashes).collect());
+        }
 
-            let proof_hashes = self.proof_hashes.get(slice_start..next_slice_start).unwrap();
-            proof_layers.push(proof_indices.iter().cloned().zip(proof_hashes.iter().cloned()).collect());
+        match proof_layers.first_mut() {
+            Some(first_layer) => {
+                first_layer.append(&mut leaf_tuples);
+                first_layer.sort_by(|(a, _), (b, _)| a.cmp(b));
+            },
+            None => proof_layers.push(leaf_tuples)
         }
 
         // TODO: remove the unwrap!
-        let partial_tree = PartialTree::<T>::build(&leaf_tuples, &proof_layers, proof_layers.len()).unwrap();
+        let partial_tree = PartialTree::<T>::build(proof_layers, tree_depth).unwrap();
 
         return partial_tree.root().unwrap().clone();
     }
