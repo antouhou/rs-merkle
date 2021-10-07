@@ -1,6 +1,6 @@
 [package]
 name = "rs_merkle"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Anton Suprunchuk <anton.suprunchuk@gmail.com>"]
 description = "The most advanced Merkle Tree librray for Rust"
 edition = "2018"
