@@ -17,7 +17,7 @@ use std::mem;
 /// impl Hasher for Sha256Algorithm {
 ///     type Hash = [u8; 32];
 ///
-///     fn hash(data: &Vec<u8>) -> [u8; 32] {
+///     fn hash(data: &[u8]) -> [u8; 32] {
 ///         let mut hasher = Sha256::new();
 ///
 ///         hasher.update(data);
@@ -42,7 +42,7 @@ pub trait Hasher: Clone {
 
     /// This associated function takes arbitrary bytes and returns hash of it.
     /// Used by `concat_and_hash` function to build a tree from concatenated hashes
-    fn hash(data: &Vec<u8>) -> Self::Hash;
+    fn hash(data: &[u8]) -> Self::Hash;
 
     /// Used by `MerkleTree` and `MerkleProof` when calculating the root.
     /// The provided default implementation follows propagates left node if it doesn't

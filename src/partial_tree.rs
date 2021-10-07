@@ -18,7 +18,7 @@ impl<T: Hasher> PartialTree<T> {
 
     /// This is a helper function to build a full tree from a full set of leaves without any
     /// helper indices
-    pub fn from_leaves(leaves: &Vec<T::Hash>) -> Result<Self, Error> {
+    pub fn from_leaves(leaves: &[T::Hash]) -> Result<Self, Error> {
         let leaf_tuples: Vec<(usize, T::Hash)> = leaves.iter().cloned().enumerate().collect();
 
         Self::build(
@@ -162,7 +162,7 @@ impl<T: Hasher> PartialTree<T> {
     }
 
     /// Returns partial tree layers
-    pub fn layers(&self) -> &Vec<Vec<(usize, T::Hash)>> {
+    pub fn layers(&self) -> &[Vec<(usize, T::Hash)>] {
         &self.layers
     }
 

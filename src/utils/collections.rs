@@ -15,6 +15,6 @@ pub fn to_hex_string<T: Clone + Into<Vec<u8>>>(bytes: &T) -> String {
 /// Find a difference between two vectors and return a third vector
 /// containing the difference. This function preserves the first
 /// vector order.
-pub fn difference<T: Clone + PartialEq>(a: &Vec<T>, b: &Vec<T>) -> Vec<T> {
+pub fn difference<T: Clone + PartialEq>(a: &[T], b: &[T]) -> Vec<T> {
     a.iter().cloned().filter(|x| !b.contains(x)).collect()
 }

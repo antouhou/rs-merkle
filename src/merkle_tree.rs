@@ -20,7 +20,7 @@ use crate::partial_tree::PartialTree;
 ///
 /// let leaf_values = ["a", "b", "c", "d", "e", "f"];
 /// let expected_root_hex = "1f7379539707bcaea00564168d1d4d626b09b73f8a2a365234c62d763f854da2";
-/// let leaves = leaf_values
+/// let leaves: Vec<[u8; 32]> = leaf_values
 ///         .iter()
 ///         .map(|x| Sha256::hash(x.as_bytes().to_vec().as_ref()))
 ///         .collect();
@@ -124,10 +124,10 @@ impl<T: Hasher> MerkleTree<T> {
     }
 
     /// Clones leave hashes and build the tree from them
-    pub fn from_leaves(leaves: &Vec<T::Hash>) -> Self {
+    pub fn from_leaves(leaves: &[T::Hash]) -> Self {
         let mut tree = Self::new();
 
-        tree.append(leaves.clone().as_mut());
+        tree.append(leaves.to_vec().as_mut());
         tree.commit();
 
         tree
@@ -147,7 +147,7 @@ impl<T: Hasher> MerkleTree<T> {
 
     /// Returns helper nodes required to build a partial tree for the given indices
     /// to be able to extract a root from it. Useful in constructing merkle proofs
-    fn helper_nodes(&self, leaf_indices: &Vec<usize>) -> Vec<T::Hash> {
+    fn helper_nodes(&self, leaf_indices: &[usize]) -> Vec<T::Hash> {
         let mut helper_nodes = Vec::<T::Hash>::new();
 
         for layer in self.helper_node_tuples(leaf_indices) {
@@ -161,7 +161,7 @@ impl<T: Hasher> MerkleTree<T> {
 
     /// Gets all helper nodes required to build a partial merkle tree for the given indices,
     /// cloning all required hashes into the resulting vector.
-    fn helper_node_tuples(&self, leaf_indices: &Vec<usize>) -> Vec<Vec<(usize, T::Hash)>> {
+    fn helper_node_tuples(&self, leaf_indices: &[usize]) -> Vec<Vec<(usize, T::Hash)>> {
         let mut current_layer_indices = leaf_indices.to_vec();
         let mut helper_nodes: Vec<Vec<(usize, T::Hash)>> = Vec::new();
 
@@ -190,7 +190,7 @@ impl<T: Hasher> MerkleTree<T> {
     }
 
     /// Returns merkle proof required to prove inclusion of items at given indices
-    pub fn proof(&self, leaf_indices: &Vec<usize>) -> MerkleProof<T> {
+    pub fn proof(&self, leaf_indices: &[usize]) -> MerkleProof<T> {
         MerkleProof::<T>::new(self.helper_nodes(leaf_indices))
     }
 

@@ -19,7 +19,7 @@ pub fn get_sibling_index(index: usize) -> usize {
     index - 1
 }
 
-pub fn sibling_indices(indices: &Vec<usize>) -> Vec<usize> {
+pub fn sibling_indices(indices: &[usize]) -> Vec<usize> {
     indices.iter().cloned().map(get_sibling_index).collect()
 }
 
@@ -30,7 +30,7 @@ pub fn parent_index(index: usize) -> usize {
         return get_sibling_index(index) / 2;
 }
 
-pub fn parent_indices(indices: &Vec<usize>) -> Vec<usize> {
+pub fn parent_indices(indices: &[usize]) -> Vec<usize> {
     let mut parents: Vec<usize> = indices.iter().cloned().map(parent_index).collect();
     parents.dedup();
     parents
@@ -66,7 +66,7 @@ pub fn uneven_layers(tree_leaves_count: usize) -> HashMap<usize, usize> {
 }
 
 /// Returns layered proof indices
-pub fn proof_indices_by_layers(sorted_leaf_indices: &Vec<usize>, leaves_count: usize) -> Vec<Vec<usize>> {
+pub fn proof_indices_by_layers(sorted_leaf_indices: &[usize], leaves_count: usize) -> Vec<Vec<usize>> {
     let depth = tree_depth(leaves_count);
     let uneven_layers = uneven_layers(leaves_count);
 

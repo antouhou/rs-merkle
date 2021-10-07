@@ -64,7 +64,7 @@ impl<T: Hasher> MerkleProof<T> {
     }
 
     /// Returns
-    pub fn proof_hashes(&self) -> &Vec<T::Hash> {
+    pub fn proof_hashes(&self) -> &[T::Hash] {
         &self.proof_hashes
     }
 
@@ -76,7 +76,7 @@ impl<T: Hasher> MerkleProof<T> {
     }
 
     /// Calculates merkle root based on provided leaves and proof hashes
-    pub fn root(&self, leaf_indices: &Vec<usize>, leaf_hashes: &Vec<T::Hash>, total_leaves_count: usize) -> T::Hash {
+    pub fn root(&self, leaf_indices: &[usize], leaf_hashes: &[T::Hash], total_leaves_count: usize) -> T::Hash {
         let tree_depth = utils::indices::tree_depth(total_leaves_count);
 
         // Zipping indices and hashes into a vector of (original_index_in_tree, leaf_hash)
@@ -109,13 +109,13 @@ impl<T: Hasher> MerkleProof<T> {
     }
 
     /// Calculates the root and serializes it into a hex string
-    pub fn hex_root(&self, leaf_indices: &Vec<usize>, leaf_hashes: &Vec<T::Hash>, total_leaves_count: usize) -> String {
+    pub fn hex_root(&self, leaf_indices: &[usize], leaf_hashes: &[T::Hash], total_leaves_count: usize) -> String {
         let root = self.root(leaf_indices, leaf_hashes, total_leaves_count);
         utils::collections::to_hex_string(&root)
     }
 
     /// Verifies
-    pub fn verify(&self, root: T::Hash, leaf_indices: &Vec<usize>, leaf_hashes: &Vec<T::Hash>, total_leaves_count: usize) -> bool {
+    pub fn verify(&self, root: T::Hash, leaf_indices: &[usize], leaf_hashes: &[T::Hash], total_leaves_count: usize) -> bool {
         let extracted_root = self.root(leaf_indices, leaf_hashes, total_leaves_count);
         root == extracted_root
     }
