@@ -1,9 +1,9 @@
 use std::convert::TryInto;
 
-use crate::{Hasher, utils};
 use crate::error::Error;
 use crate::error::ErrorKind;
 use crate::partial_tree::PartialTree;
+use crate::{utils, Hasher};
 
 /// `MerkleProof` is used to parse, verify, calculate a root for merkle proofs.
 ///
@@ -29,9 +29,7 @@ pub struct MerkleProof<T: Hasher> {
 
 impl<T: Hasher> MerkleProof<T> {
     pub fn new(proof_hashes: Vec<T::Hash>) -> Self {
-        MerkleProof {
-            proof_hashes,
-        }
+        MerkleProof { proof_hashes }
     }
 
     /// Parses proof serialized as bytes
@@ -42,20 +40,29 @@ impl<T: Hasher> MerkleProof<T> {
         if bytes.len() % hash_size != 0 {
             return Err(Error::new(
                 ErrorKind::SerializedProofSizeIsIncorrect,
-                format!("Proof of size {} bytes can not be divided into chunks of {} bytes", bytes.len(), hash_size)));
+                format!(
+                    "Proof of size {} bytes can not be divided into chunks of {} bytes",
+                    bytes.len(),
+                    hash_size
+                ),
+            ));
         }
 
         let hashes_count = bytes.len() / hash_size;
         let proof_hashes_slices: Vec<T::Hash> = (0..hashes_count)
             .map(|i| {
-                let x: Vec<u8> = bytes.get(i * hash_size..(i + 1) * hash_size).unwrap().try_into().unwrap();
+                let x: Vec<u8> = bytes
+                    .get(i * hash_size..(i + 1) * hash_size)
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
                 match x.try_into() {
                     Ok(val) => val,
                     // Because of the check above the initial bytes are always slices perfectly
                     // into appropriately sized hashes.
                     // Unwrap is not used here due to more complex trait bounds on T::Hash
                     // that would be require to satisfy .unwrap usage
-                    Err(_) => panic!("Unexpected error during proof parsing")
+                    Err(_) => panic!("Unexpected error during proof parsing"),
                 }
             })
             .collect();
@@ -76,15 +83,25 @@ impl<T: Hasher> MerkleProof<T> {
     }
 
     /// Calculates merkle root based on provided leaves and proof hashes
-    pub fn root(&self, leaf_indices: &[usize], leaf_hashes: &[T::Hash], total_leaves_count: usize) -> T::Hash {
+    pub fn root(
+        &self,
+        leaf_indices: &[usize],
+        leaf_hashes: &[T::Hash],
+        total_leaves_count: usize,
+    ) -> T::Hash {
         let tree_depth = utils::indices::tree_depth(total_leaves_count);
 
         // Zipping indices and hashes into a vector of (original_index_in_tree, leaf_hash)
-        let mut leaf_tuples: Vec<(usize, T::Hash)> = leaf_indices.iter().cloned().zip(leaf_hashes.iter().cloned()).collect();
+        let mut leaf_tuples: Vec<(usize, T::Hash)> = leaf_indices
+            .iter()
+            .cloned()
+            .zip(leaf_hashes.iter().cloned())
+            .collect();
         // Sorting leaves by indexes in case they weren't sorted already
         leaf_tuples.sort_by(|(a, _), (b, _)| a.cmp(b));
         // Getting back _sorted_ indices
-        let proof_indices_by_layers = utils::indices::proof_indices_by_layers(leaf_indices, total_leaves_count);
+        let proof_indices_by_layers =
+            utils::indices::proof_indices_by_layers(leaf_indices, total_leaves_count);
 
         // The next lines copy hashes from proof hashes and group them by layer index
         let mut proof_layers: Vec<Vec<(usize, T::Hash)>> = Vec::with_capacity(tree_depth + 1);
@@ -98,8 +115,8 @@ impl<T: Hasher> MerkleProof<T> {
             Some(first_layer) => {
                 first_layer.append(&mut leaf_tuples);
                 first_layer.sort_by(|(a, _), (b, _)| a.cmp(b));
-            },
-            None => proof_layers.push(leaf_tuples)
+            }
+            None => proof_layers.push(leaf_tuples),
         }
 
         // TODO: remove the unwrap!
@@ -109,20 +126,36 @@ impl<T: Hasher> MerkleProof<T> {
     }
 
     /// Calculates the root and serializes it into a hex string
-    pub fn hex_root(&self, leaf_indices: &[usize], leaf_hashes: &[T::Hash], total_leaves_count: usize) -> String {
+    pub fn hex_root(
+        &self,
+        leaf_indices: &[usize],
+        leaf_hashes: &[T::Hash],
+        total_leaves_count: usize,
+    ) -> String {
         let root = self.root(leaf_indices, leaf_hashes, total_leaves_count);
         utils::collections::to_hex_string(&root)
     }
 
     /// Verifies
-    pub fn verify(&self, root: T::Hash, leaf_indices: &[usize], leaf_hashes: &[T::Hash], total_leaves_count: usize) -> bool {
+    pub fn verify(
+        &self,
+        root: T::Hash,
+        leaf_indices: &[usize],
+        leaf_hashes: &[T::Hash],
+        total_leaves_count: usize,
+    ) -> bool {
         let extracted_root = self.root(leaf_indices, leaf_hashes, total_leaves_count);
         root == extracted_root
     }
 
     /// Serializes proof hashes to a flat vector of bytes
     pub fn to_bytes(&self) -> Vec<u8> {
-        let vectors: Vec<Vec<u8>> = self.proof_hashes().iter().cloned().map(|hash| hash.into()).collect();
+        let vectors: Vec<Vec<u8>> = self
+            .proof_hashes()
+            .iter()
+            .cloned()
+            .map(|hash| hash.into())
+            .collect();
         vectors.iter().cloned().flatten().collect()
     }
 }

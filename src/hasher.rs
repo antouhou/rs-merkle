@@ -60,8 +60,8 @@ pub trait Hasher: Clone {
                 let mut right_node_clone: Vec<u8> = right_node.clone().into();
                 concatenated.append(&mut right_node_clone);
                 Self::hash(&concatenated)
-            },
-            None => left.clone()
+            }
+            None => left.clone(),
         }
     }
 

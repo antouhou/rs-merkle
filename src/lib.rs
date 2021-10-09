@@ -11,12 +11,11 @@ pub use merkle_proof::MerkleProof;
 pub use merkle_tree::MerkleTree;
 pub use partial_tree::PartialTree;
 
-mod merkle_tree;
-mod merkle_proof;
-mod partial_tree;
 mod hasher;
+mod merkle_proof;
+mod merkle_tree;
+mod partial_tree;
 
 pub mod algorithms;
 pub mod error;
 mod utils;
-

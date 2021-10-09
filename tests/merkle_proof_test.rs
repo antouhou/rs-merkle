@@ -2,9 +2,9 @@ mod common;
 
 pub mod root {
     use crate::common;
-    use rs_merkle::{MerkleTree, algorithms::Sha256, Hasher};
-    use std::time::Instant;
     use rayon::prelude::*;
+    use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
+    use std::time::Instant;
 
     #[test]
     pub fn should_return_a_correct_root() {
@@ -12,18 +12,31 @@ pub mod root {
         let expected_root = test_data.expected_root_hex.clone();
         let leaf_hashes = &test_data.leaf_hashes;
         let indices_to_prove = vec![3, 4];
-        let leaves_to_prove: Vec<[u8; 32]> = indices_to_prove.iter().cloned().map(|i| leaf_hashes.get(i).unwrap().clone()).collect();
+        let leaves_to_prove: Vec<[u8; 32]> = indices_to_prove
+            .iter()
+            .cloned()
+            .map(|i| leaf_hashes.get(i).unwrap().clone())
+            .collect();
 
         let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
         let proof = merkle_tree.proof(&indices_to_prove);
-        let extracted_root = proof.hex_root(&indices_to_prove, &leaves_to_prove, test_data.leaf_values.len());
+        let extracted_root = proof.hex_root(
+            &indices_to_prove,
+            &leaves_to_prove,
+            test_data.leaf_values.len(),
+        );
 
         assert_eq!(extracted_root, expected_root);
 
         let test_preparation_started = Instant::now();
         let test_cases = common::setup_proof_test_cases();
-        println!("Preparing test cases took {:.2}s", test_preparation_started.elapsed().as_secs_f32());
-        let test_cases_count = test_cases.iter().fold(0, |acc, case| acc + case.cases.len());
+        println!(
+            "Preparing test cases took {:.2}s",
+            test_preparation_started.elapsed().as_secs_f32()
+        );
+        let test_cases_count = test_cases
+            .iter()
+            .fold(0, |acc, case| acc + case.cases.len());
 
         // Roots:
         // 1: ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb
@@ -42,7 +55,6 @@ pub mod root {
         // 14: 4e4afdcec057392d1a735b39f41d4f3ef1cab5637c91f5443996079b3c763538
         // 15: a2e073232cb6285fa5f04957dfe6a3238a9dce003908932231174884e5861767
 
-
         let test_run_started = Instant::now();
         test_cases.par_iter().for_each(|test_case| {
             let merkle_tree = &test_case.merkle_tree;
@@ -50,30 +62,36 @@ pub mod root {
 
             test_case.cases.par_iter().for_each(|case| {
                 let proof = merkle_tree.proof(&case.leaf_indices_to_prove);
-                let extracted_root = proof.root(&case.leaf_indices_to_prove, &case.leaf_hashes_to_prove, merkle_tree.leaves().unwrap().len());
+                let extracted_root = proof.root(
+                    &case.leaf_indices_to_prove,
+                    &case.leaf_hashes_to_prove,
+                    merkle_tree.leaves().unwrap().len(),
+                );
 
                 assert_eq!(extracted_root, root)
             });
         });
-        println!("{} test cases executed in {:.2}s", test_cases_count, test_run_started.elapsed().as_secs_f32());
+        println!(
+            "{} test cases executed in {:.2}s",
+            test_cases_count,
+            test_run_started.elapsed().as_secs_f32()
+        );
     }
 }
 
 pub mod to_bytes {
     use crate::common;
-    use rs_merkle::{MerkleTree, algorithms::Sha256};
+    use rs_merkle::{algorithms::Sha256, MerkleTree};
 
     #[test]
     pub fn should_correctly_serialize_to_bytes() {
         let expected_bytes: Vec<u8> = vec![
-            46, 125,  44,   3, 169,  80, 122, 226, 101, 236, 245, 181,
-            53, 104, 133, 165,  51, 147, 162,   2, 157,  36,  19, 148,
-            153, 114, 101, 161, 162,  90, 239, 198,  37,  47,  16, 200,
-            54,  16, 235, 202,  26,   5, 156,  11, 174, 130,  85, 235,
-            162, 249,  91, 228, 209, 215, 188, 250, 137, 215,  36, 138,
-            130, 217, 241,  17, 229, 160,  31, 238,  20, 224, 237,  92,
-            72, 113,  79,  34,  24,  15,  37, 173, 131, 101, 181,  63,
-            151, 121, 247, 157, 196, 163, 215, 233,  57,  99, 249,  74
+            46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+            2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198, 37, 47, 16, 200, 54, 16,
+            235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228, 209, 215, 188, 250,
+            137, 215, 36, 138, 130, 217, 241, 17, 229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79,
+            34, 24, 15, 37, 173, 131, 101, 181, 63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99,
+            249, 74,
         ];
 
         let test_data = common::setup();
@@ -88,8 +106,8 @@ pub mod to_bytes {
 }
 
 pub mod from_bytes {
-    use rs_merkle::{MerkleProof, algorithms::Sha256};
     use crate::common;
+    use rs_merkle::{algorithms::Sha256, MerkleProof};
 
     #[test]
     pub fn should_return_result_with_proof() {
@@ -100,14 +118,12 @@ pub mod from_bytes {
         ];
 
         let bytes: Vec<u8> = vec![
-            46, 125,  44,   3, 169,  80, 122, 226, 101, 236, 245, 181,
-            53, 104, 133, 165,  51, 147, 162,   2, 157,  36,  19, 148,
-            153, 114, 101, 161, 162,  90, 239, 198,  37,  47,  16, 200,
-            54,  16, 235, 202,  26,   5, 156,  11, 174, 130,  85, 235,
-            162, 249,  91, 228, 209, 215, 188, 250, 137, 215,  36, 138,
-            130, 217, 241,  17, 229, 160,  31, 238,  20, 224, 237,  92,
-            72, 113,  79,  34,  24,  15,  37, 173, 131, 101, 181,  63,
-            151, 121, 247, 157, 196, 163, 215, 233,  57,  99, 249,  74
+            46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+            2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198, 37, 47, 16, 200, 54, 16,
+            235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228, 209, 215, 188, 250,
+            137, 215, 36, 138, 130, 217, 241, 17, 229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79,
+            34, 24, 15, 37, 173, 131, 101, 181, 63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99,
+            249, 74,
         ];
 
         let proof = MerkleProof::<Sha256>::from_bytes(bytes).unwrap();
@@ -119,17 +135,18 @@ pub mod from_bytes {
     #[test]
     pub fn should_return_error_when_proof_can_not_be_parsed() {
         let bytes: Vec<u8> = vec![
-            46, 125,  44,   3, 169,  80, 122, 226, 101, 236, 245, 181,
-            53, 104, 133, 165,  51, 147, 162,   2, 157,  36,  19, 148,
-            153, 114, 101, 161, 162,  90, 239, 198,  37,  47,  16, 200,
-            54,  16, 235, 202,  26,   5, 156,  11, 174, 130,  85, 235,
-            162, 249,  91, 228, 209, 215, 188, 250, 137, 215,  36, 138,
-            130, 217, 241,  17, 229, 160,  31, 238,  20, 224, 237,  92,
-            72, 113,  79,  34,  24,  15,  37, 173, 131, 101, 181,  63,
+            46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+            2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198, 37, 47, 16, 200, 54, 16,
+            235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228, 209, 215, 188, 250,
+            137, 215, 36, 138, 130, 217, 241, 17, 229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79,
+            34, 24, 15, 37, 173, 131, 101, 181, 63,
         ];
 
         let err = MerkleProof::<Sha256>::from_bytes(bytes).err().unwrap();
 
-        assert_eq!(err.message(), "Proof of size 84 bytes can not be divided into chunks of 32 bytes");
+        assert_eq!(
+            err.message(),
+            "Proof of size 84 bytes can not be divided into chunks of 32 bytes"
+        );
     }
 }

@@ -1,5 +1,5 @@
 use crate::utils;
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
 pub struct LayerInfo {
     index: usize,
@@ -27,7 +27,7 @@ pub fn parent_index(index: usize) -> usize {
     if is_left_index(index) {
         return index / 2;
     }
-        return get_sibling_index(index) / 2;
+    return get_sibling_index(index) / 2;
 }
 
 pub fn parent_indices(indices: &[usize]) -> Vec<usize> {
@@ -66,7 +66,10 @@ pub fn uneven_layers(tree_leaves_count: usize) -> HashMap<usize, usize> {
 }
 
 /// Returns layered proof indices
-pub fn proof_indices_by_layers(sorted_leaf_indices: &[usize], leaves_count: usize) -> Vec<Vec<usize>> {
+pub fn proof_indices_by_layers(
+    sorted_leaf_indices: &[usize],
+    leaves_count: usize,
+) -> Vec<Vec<usize>> {
     let depth = tree_depth(leaves_count);
     let uneven_layers = uneven_layers(leaves_count);
 
