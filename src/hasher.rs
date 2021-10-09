@@ -53,15 +53,15 @@ pub trait Hasher: Clone {
     /// if the left node doesn't have a sibling it is concatenated to itself and
     /// then hashed instead of just being propagated to the next level.
     fn concat_and_hash(left: &Self::Hash, right: Option<&Self::Hash>) -> Self::Hash {
-        let mut concatenated: Vec<u8> = left.clone().into();
+        let mut concatenated: Vec<u8> = (*left).into();
 
         match right {
             Some(right_node) => {
-                let mut right_node_clone: Vec<u8> = right_node.clone().into();
+                let mut right_node_clone: Vec<u8> = (*right_node).into();
                 concatenated.append(&mut right_node_clone);
                 Self::hash(&concatenated)
-            },
-            None => left.clone()
+            }
+            None => *left,
         }
     }
 

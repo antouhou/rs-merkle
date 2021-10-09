@@ -1,5 +1,5 @@
-use sha2::{Sha256, Digest, digest::FixedOutput};
 use crate::Hasher;
+use sha2::{digest::FixedOutput, Digest, Sha256};
 
 /// Sha256 implementation of the `rs_merkle::Hasher` trait
 #[derive(Clone)]

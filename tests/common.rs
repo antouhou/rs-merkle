@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use rs_merkle::{Hasher, MerkleTree, algorithms::Sha256};
+use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 
 pub struct TestData {
     pub leaf_values: Vec<String>,
@@ -22,7 +22,7 @@ fn combine<T: Clone>(active: Vec<T>, rest: Vec<T>, mut combinations: Vec<Vec<T>>
         combinations = combine(next, rest.clone().drain(1..).collect(), combinations);
         combinations = combine(active, rest.clone().drain(1..).collect(), combinations);
         combinations
-    }
+    };
 }
 
 /// Create all possible combinations of elements inside a vector without duplicates
@@ -41,14 +41,14 @@ pub fn setup() -> TestData {
     TestData {
         leaf_values: leaf_values.iter().cloned().map(String::from).collect(),
         leaf_hashes,
-        expected_root_hex: String::from(expected_root_hex)
+        expected_root_hex: String::from(expected_root_hex),
     }
 }
 
 #[derive(Clone)]
 pub struct ProofTestCases {
     pub merkle_tree: MerkleTree<Sha256>,
-    pub cases: Vec<MerkleProofTestCase>
+    pub cases: Vec<MerkleProofTestCase>,
 }
 
 #[derive(Clone)]
@@ -68,7 +68,9 @@ impl MerkleProofTestCase {
 }
 
 pub fn setup_proof_test_cases() -> Vec<ProofTestCases> {
-    let max_case = ["a", "b", "c", "d", "e", "f", "g", "h", "k", "l", "m", "o", "p", "r", "s"];
+    let max_case = [
+        "a", "b", "c", "d", "e", "f", "g", "h", "k", "l", "m", "o", "p", "r", "s",
+    ];
 
     max_case
         .par_iter()
@@ -96,11 +98,13 @@ pub fn setup_proof_test_cases() -> Vec<ProofTestCases> {
                 .cloned()
                 .map(|index_combination| {
                     MerkleProofTestCase::new(
-                        index_combination.iter().map(|index| leaves.get(*index).unwrap().clone()).collect(),
+                        index_combination
+                            .iter()
+                            .map(|index| leaves.get(*index).unwrap().clone())
+                            .collect(),
                         index_combination,
                     )
-                }
-                )
+                })
                 .collect();
             let case = ProofTestCases { merkle_tree, cases };
             case

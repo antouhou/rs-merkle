@@ -1,15 +1,15 @@
-use std::fmt::{Debug, Formatter, Display};
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Copy, Clone, Debug)]
 pub enum ErrorKind {
     SerializedProofSizeIsIncorrect,
-    NotEnoughHelperNodes
+    NotEnoughHelperNodes,
 }
 
 #[derive(Clone, Debug)]
 pub struct Error {
     kind: ErrorKind,
-    message: String
+    message: String,
 }
 
 impl Error {
@@ -20,7 +20,7 @@ impl Error {
     pub fn not_enough_helper_nodes() -> Self {
         Self::new(
             ErrorKind::NotEnoughHelperNodes,
-            String::from("Not enough hashes to reconstruct the root")
+            String::from("Not enough hashes to reconstruct the root"),
         )
     }
 
@@ -28,7 +28,9 @@ impl Error {
         self.kind
     }
 
-    pub fn message(&self) -> &str { &self.message }
+    pub fn message(&self) -> &str {
+        &self.message
+    }
 }
 
 impl std::error::Error for Error {}
