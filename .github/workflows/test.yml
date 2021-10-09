@@ -17,5 +17,9 @@ jobs:
         toolchain: stable
         profile: minimal
         override: true
+    - name: Install Clippy
+      run: rustup component add clippy
+    - name: Run linter
+      run: cargo clippy -- -D warnings
     - name: Run tests
       run: cargo test
