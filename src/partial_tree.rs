@@ -1,5 +1,7 @@
-use crate::error::{Error, ErrorKind};
+use crate::error::Error;
 use crate::{utils, Hasher};
+
+type PartialTreeLayer<H> = Vec<(usize, H)>;
 
 /// Partial tree represents a part of the original tree that is enough to calculate the root.
 /// Used in to extract the root in a merkle proof, to apply diff to a tree or to merge
@@ -7,6 +9,12 @@ use crate::{utils, Hasher};
 #[derive(Clone)]
 pub struct PartialTree<T: Hasher> {
     layers: Vec<Vec<(usize, T::Hash)>>,
+}
+
+impl<T: Hasher> Default for PartialTree<T> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<T: Hasher> PartialTree<T> {
@@ -35,7 +43,7 @@ impl<T: Hasher> PartialTree<T> {
     fn build_tree(
         mut partial_layers: Vec<Vec<(usize, T::Hash)>>,
         full_tree_depth: usize,
-    ) -> Result<Vec<Vec<(usize, T::Hash)>>, Error> {
+    ) -> Result<Vec<PartialTreeLayer<T::Hash>>, Error> {
         let mut partial_tree: Vec<Vec<(usize, T::Hash)>> = Vec::new();
         let mut current_layer = Vec::new();
 
@@ -67,7 +75,7 @@ impl<T: Hasher> PartialTree<T> {
                 match nodes.get(i * 2) {
                     // Populate `current_layer` back for the next iteration
                     Some(left_node) => current_layer.push((
-                        parent_node_index.clone(),
+                        *parent_node_index,
                         T::concat_and_hash(left_node, nodes.get(i * 2 + 1)),
                     )),
                     None => return Err(Error::not_enough_helper_nodes()),
@@ -92,15 +100,7 @@ impl<T: Hasher> PartialTree<T> {
 
     pub fn contains(&self, layer_index: usize, node_index: usize) -> bool {
         match self.layers().get(layer_index) {
-            Some(layer) => {
-                match layer
-                    .iter()
-                    .position(|(index, _)| index.clone() == node_index)
-                {
-                    Some(_) => true,
-                    None => false,
-                }
-            }
+            Some(layer) => layer.iter().any(|(index, _)| *index == node_index),
             None => false,
         }
     }
@@ -126,7 +126,7 @@ impl<T: Hasher> PartialTree<T> {
             if let Some(self_layer) = self.layers().get(layer_index) {
                 let mut filtered_layer: Vec<(usize, T::Hash)> = self_layer
                     .iter()
-                    .filter(|(node_index, _)| !other.contains(layer_index, node_index.clone()))
+                    .filter(|(node_index, _)| !other.contains(layer_index, *node_index))
                     .cloned()
                     .collect();
 

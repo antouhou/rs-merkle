@@ -122,7 +122,7 @@ impl<T: Hasher> MerkleProof<T> {
         // TODO: remove the unwrap!
         let partial_tree = PartialTree::<T>::build(proof_layers, tree_depth).unwrap();
 
-        return partial_tree.root().unwrap().clone();
+        *partial_tree.root().unwrap()
     }
 
     /// Calculates the root and serializes it into a hex string

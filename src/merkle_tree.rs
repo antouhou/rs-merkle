@@ -1,5 +1,5 @@
 use crate::partial_tree::PartialTree;
-use crate::utils::indices::{parent_indices, proof_indices_by_layers};
+use crate::utils::indices;
 use crate::{utils, Hasher, MerkleProof};
 
 /// [`MerkleTree`] is a Merkle Tree that is well suited for both basic and advanced usage.
@@ -98,6 +98,12 @@ pub struct MerkleTree<T: Hasher> {
     uncommitted_leaves: Vec<T::Hash>,
 }
 
+impl<T: Hasher> Default for MerkleTree<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Hasher> MerkleTree<T> {
     /// Creates a new instance of Merkle Tree. Requires specifying the hash algorithm.
     ///
@@ -174,7 +180,7 @@ impl<T: Hasher> MerkleTree<T> {
             for index in helper_indices {
                 match tree_layer.get(index) {
                     Some(hash) => {
-                        helpers_layer.push((index, hash.clone()));
+                        helpers_layer.push((index, *hash));
                     }
                     // This means that there's no right sibling to the current index, thus
                     // we don't need to include anything in the proof for that index
@@ -183,7 +189,7 @@ impl<T: Hasher> MerkleTree<T> {
             }
 
             helper_nodes.push(helpers_layer);
-            current_layer_indices = parent_indices(&current_layer_indices);
+            current_layer_indices = indices::parent_indices(&current_layer_indices);
         }
 
         helper_nodes
