@@ -4,7 +4,8 @@ use std::fmt::{Debug, Display, Formatter};
 pub enum ErrorKind {
     SerializedProofSizeIsIncorrect,
     NotEnoughHelperNodes,
-    ProofParsingError,
+    HashConversionError,
+    NotEnoughHashesToCalculateRoot,
 }
 
 #[derive(Clone, Debug)]
@@ -37,8 +38,15 @@ impl Error {
 
     pub fn vec_to_hash_conversion_error() -> Self {
         Self::new(
-            ErrorKind::ProofParsingError,
+            ErrorKind::HashConversionError,
             "Couldn't convert proof hash data into Hasher::Hash".to_string(),
+        )
+    }
+
+    pub fn not_enough_hashes_to_calculate_root() -> Self {
+        Self::new(
+            ErrorKind::NotEnoughHashesToCalculateRoot,
+            "Proof doesn't contain enough data to extract the root".to_string(),
         )
     }
 

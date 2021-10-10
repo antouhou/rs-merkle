@@ -67,7 +67,7 @@ pub mod commit {
 
         // Passing empty vec to create an empty tree
         let mut merkle_tree = MerkleTree::<Sha256>::from_leaves(&vec);
-        let mut merkle_tree2 = MerkleTree::<Sha256>::from_leaves(&leaf_hashes);
+        let merkle_tree2 = MerkleTree::<Sha256>::from_leaves(&leaf_hashes);
         // Adding leaves
         merkle_tree.append(leaf_hashes.clone().as_mut());
         let root = merkle_tree.uncommitted_root_hex().unwrap();

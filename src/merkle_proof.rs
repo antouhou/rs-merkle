@@ -74,7 +74,7 @@ impl<T: Hasher> MerkleProof<T> {
         leaf_indices: &[usize],
         leaf_hashes: &[T::Hash],
         total_leaves_count: usize,
-    ) -> T::Hash {
+    ) -> Result<T::Hash, Error> {
         let tree_depth = utils::indices::tree_depth(total_leaves_count);
 
         // Zipping indices and hashes into a vector of (original_index_in_tree, leaf_hash)
@@ -105,10 +105,12 @@ impl<T: Hasher> MerkleProof<T> {
             None => proof_layers.push(leaf_tuples),
         }
 
-        // TODO: remove the unwrap!
-        let partial_tree = PartialTree::<T>::build(proof_layers, tree_depth).unwrap();
+        let partial_tree = PartialTree::<T>::build(proof_layers, tree_depth)?;
 
-        *partial_tree.root().unwrap()
+        match partial_tree.root() {
+            Some(root) => Ok(*root),
+            None => Err(Error::not_enough_hashes_to_calculate_root()),
+        }
     }
 
     /// Calculates the root and serializes it into a hex string
@@ -117,9 +119,9 @@ impl<T: Hasher> MerkleProof<T> {
         leaf_indices: &[usize],
         leaf_hashes: &[T::Hash],
         total_leaves_count: usize,
-    ) -> String {
-        let root = self.root(leaf_indices, leaf_hashes, total_leaves_count);
-        utils::collections::to_hex_string(&root)
+    ) -> Result<String, Error> {
+        let root = self.root(leaf_indices, leaf_hashes, total_leaves_count)?;
+        Ok(utils::collections::to_hex_string(&root))
     }
 
     /// Verifies
@@ -130,8 +132,10 @@ impl<T: Hasher> MerkleProof<T> {
         leaf_hashes: &[T::Hash],
         total_leaves_count: usize,
     ) -> bool {
-        let extracted_root = self.root(leaf_indices, leaf_hashes, total_leaves_count);
-        root == extracted_root
+        match self.root(leaf_indices, leaf_hashes, total_leaves_count) {
+            Ok(extracted_root) => extracted_root == root,
+            Err(_) => false,
+        }
     }
 
     /// Serializes proof hashes to a flat vector of bytes
