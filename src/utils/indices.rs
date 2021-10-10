@@ -72,8 +72,10 @@ pub fn proof_indices_by_layers(
         // The last node of that layer doesn't have another hash to the right, so no need to include
         // that index
         if let Some(leaves_count) = uneven_layers.get(&layer_index) {
-            if layer_nodes.last().unwrap() == &(leaves_count - 1) {
-                sibling_indices.pop();
+            if let Some(layer_last_node_index) = layer_nodes.last() {
+                if *layer_last_node_index == leaves_count - 1 {
+                    sibling_indices.pop();
+                }
             }
         }
 

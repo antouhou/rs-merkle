@@ -4,6 +4,8 @@ use std::fmt::{Debug, Display, Formatter};
 pub enum ErrorKind {
     SerializedProofSizeIsIncorrect,
     NotEnoughHelperNodes,
+    HashConversionError,
+    NotEnoughHashesToCalculateRoot,
 }
 
 #[derive(Clone, Debug)]
@@ -21,6 +23,30 @@ impl Error {
         Self::new(
             ErrorKind::NotEnoughHelperNodes,
             String::from("Not enough hashes to reconstruct the root"),
+        )
+    }
+
+    pub fn wrong_proof_size(proof_len: usize, hash_size: usize) -> Self {
+        Self::new(
+            ErrorKind::SerializedProofSizeIsIncorrect,
+            format!(
+                "Proof of size {} bytes can not be divided into chunks of {} bytes",
+                proof_len, hash_size,
+            ),
+        )
+    }
+
+    pub fn vec_to_hash_conversion_error() -> Self {
+        Self::new(
+            ErrorKind::HashConversionError,
+            "Couldn't convert proof hash data into Hasher::Hash".to_string(),
+        )
+    }
+
+    pub fn not_enough_hashes_to_calculate_root() -> Self {
+        Self::new(
+            ErrorKind::NotEnoughHashesToCalculateRoot,
+            "Proof doesn't contain enough data to extract the root".to_string(),
         )
     }
 

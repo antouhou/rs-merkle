@@ -1,7 +1,6 @@
-use std::convert::TryInto;
+use std::convert::TryFrom;
 
 use crate::error::Error;
-use crate::error::ErrorKind;
 use crate::partial_tree::PartialTree;
 use crate::{utils, Hasher};
 
@@ -33,44 +32,34 @@ impl<T: Hasher> MerkleProof<T> {
     }
 
     /// Parses proof serialized as bytes
-    ///
-    pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         let hash_size = T::hash_size();
 
         if bytes.len() % hash_size != 0 {
-            return Err(Error::new(
-                ErrorKind::SerializedProofSizeIsIncorrect,
-                format!(
-                    "Proof of size {} bytes can not be divided into chunks of {} bytes",
-                    bytes.len(),
-                    hash_size
-                ),
-            ));
+            return Err(Error::wrong_proof_size(bytes.len(), hash_size));
         }
 
         let hashes_count = bytes.len() / hash_size;
-        let proof_hashes_slices: Vec<T::Hash> = (0..hashes_count)
-            .map(|i| {
-                let x: Vec<u8> = bytes
-                    .get(i * hash_size..(i + 1) * hash_size)
-                    .unwrap()
-                    .try_into()
-                    .unwrap();
-                match x.try_into() {
-                    Ok(val) => val,
-                    // Because of the check above the initial bytes are always slices perfectly
-                    // into appropriately sized hashes.
-                    // Unwrap is not used here due to more complex trait bounds on T::Hash
-                    // that would be require to satisfy .unwrap usage
-                    Err(_) => panic!("Unexpected error during proof parsing"),
-                }
-            })
-            .collect();
+        let mut proof_hashes_slices = Vec::<T::Hash>::with_capacity(hashes_count);
+
+        for i in 0..hashes_count {
+            let slice_start = i * hash_size;
+            let slice_end = (i + 1) * hash_size;
+            let slice = bytes
+                .get(slice_start..slice_end)
+                .ok_or_else(Error::vec_to_hash_conversion_error)?;
+            let vec =
+                Vec::<u8>::try_from(slice).map_err(|_| Error::vec_to_hash_conversion_error())?;
+            match T::Hash::try_from(vec) {
+                Ok(val) => proof_hashes_slices.push(val),
+                Err(_) => return Err(Error::vec_to_hash_conversion_error()),
+            }
+        }
 
         Ok(Self::new(proof_hashes_slices))
     }
 
-    /// Returns
+    /// Returns all hashes from the proof
     pub fn proof_hashes(&self) -> &[T::Hash] {
         &self.proof_hashes
     }
@@ -88,7 +77,7 @@ impl<T: Hasher> MerkleProof<T> {
         leaf_indices: &[usize],
         leaf_hashes: &[T::Hash],
         total_leaves_count: usize,
-    ) -> T::Hash {
+    ) -> Result<T::Hash, Error> {
         let tree_depth = utils::indices::tree_depth(total_leaves_count);
 
         // Zipping indices and hashes into a vector of (original_index_in_tree, leaf_hash)
@@ -119,10 +108,12 @@ impl<T: Hasher> MerkleProof<T> {
             None => proof_layers.push(leaf_tuples),
         }
 
-        // TODO: remove the unwrap!
-        let partial_tree = PartialTree::<T>::build(proof_layers, tree_depth).unwrap();
+        let partial_tree = PartialTree::<T>::build(proof_layers, tree_depth)?;
 
-        *partial_tree.root().unwrap()
+        match partial_tree.root() {
+            Some(root) => Ok(*root),
+            None => Err(Error::not_enough_hashes_to_calculate_root()),
+        }
     }
 
     /// Calculates the root and serializes it into a hex string
@@ -131,12 +122,12 @@ impl<T: Hasher> MerkleProof<T> {
         leaf_indices: &[usize],
         leaf_hashes: &[T::Hash],
         total_leaves_count: usize,
-    ) -> String {
-        let root = self.root(leaf_indices, leaf_hashes, total_leaves_count);
-        utils::collections::to_hex_string(&root)
+    ) -> Result<String, Error> {
+        let root = self.root(leaf_indices, leaf_hashes, total_leaves_count)?;
+        Ok(utils::collections::to_hex_string(&root))
     }
 
-    /// Verifies
+    /// Verifies the proof for a given set of leaves
     pub fn verify(
         &self,
         root: T::Hash,
@@ -144,8 +135,10 @@ impl<T: Hasher> MerkleProof<T> {
         leaf_hashes: &[T::Hash],
         total_leaves_count: usize,
     ) -> bool {
-        let extracted_root = self.root(leaf_indices, leaf_hashes, total_leaves_count);
-        root == extracted_root
+        match self.root(leaf_indices, leaf_hashes, total_leaves_count) {
+            Ok(extracted_root) => extracted_root == root,
+            Err(_) => false,
+        }
     }
 
     /// Serializes proof hashes to a flat vector of bytes

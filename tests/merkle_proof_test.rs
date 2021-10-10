@@ -20,11 +20,13 @@ pub mod root {
 
         let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
         let proof = merkle_tree.proof(&indices_to_prove);
-        let extracted_root = proof.hex_root(
-            &indices_to_prove,
-            &leaves_to_prove,
-            test_data.leaf_values.len(),
-        );
+        let extracted_root = proof
+            .hex_root(
+                &indices_to_prove,
+                &leaves_to_prove,
+                test_data.leaf_values.len(),
+            )
+            .unwrap();
 
         assert_eq!(extracted_root, expected_root);
 
@@ -62,11 +64,13 @@ pub mod root {
 
             test_case.cases.par_iter().for_each(|case| {
                 let proof = merkle_tree.proof(&case.leaf_indices_to_prove);
-                let extracted_root = proof.root(
-                    &case.leaf_indices_to_prove,
-                    &case.leaf_hashes_to_prove,
-                    merkle_tree.leaves().unwrap().len(),
-                );
+                let extracted_root = proof
+                    .root(
+                        &case.leaf_indices_to_prove,
+                        &case.leaf_hashes_to_prove,
+                        merkle_tree.leaves().unwrap().len(),
+                    )
+                    .unwrap();
 
                 assert_eq!(extracted_root, root)
             });
@@ -126,7 +130,7 @@ pub mod from_bytes {
             249, 74,
         ];
 
-        let proof = MerkleProof::<Sha256>::from_bytes(bytes).unwrap();
+        let proof = MerkleProof::<Sha256>::from_bytes(&bytes).unwrap();
         let hex_hashes = proof.hex_proof_hashes();
 
         assert_eq!(hex_hashes, expected_proof_hashes);
@@ -142,7 +146,7 @@ pub mod from_bytes {
             34, 24, 15, 37, 173, 131, 101, 181, 63,
         ];
 
-        let err = MerkleProof::<Sha256>::from_bytes(bytes).err().unwrap();
+        let err = MerkleProof::<Sha256>::from_bytes(&bytes).err().unwrap();
 
         assert_eq!(
             err.message(),
