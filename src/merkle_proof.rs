@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::convert::{Infallible, TryFrom, TryInto};
 
 use crate::error::Error;
 use crate::error::ErrorKind;
@@ -33,39 +33,26 @@ impl<T: Hasher> MerkleProof<T> {
     }
 
     /// Parses proof serialized as bytes
-    ///
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
         let hash_size = T::hash_size();
 
         if bytes.len() % hash_size != 0 {
-            return Err(Error::new(
-                ErrorKind::SerializedProofSizeIsIncorrect,
-                format!(
-                    "Proof of size {} bytes can not be divided into chunks of {} bytes",
-                    bytes.len(),
-                    hash_size
-                ),
-            ));
+            return Err(Error::wrong_proof_size(bytes.len(), hash_size));
         }
 
         let hashes_count = bytes.len() / hash_size;
-        let proof_hashes_slices: Vec<T::Hash> = (0..hashes_count)
-            .map(|i| {
-                let x: Vec<u8> = bytes
-                    .get(i * hash_size..(i + 1) * hash_size)
-                    .unwrap()
-                    .try_into()
-                    .unwrap();
-                match x.try_into() {
-                    Ok(val) => val,
-                    // Because of the check above the initial bytes are always slices perfectly
-                    // into appropriately sized hashes.
-                    // Unwrap is not used here due to more complex trait bounds on T::Hash
-                    // that would be require to satisfy .unwrap usage
-                    Err(_) => panic!("Unexpected error during proof parsing"),
-                }
-            })
-            .collect();
+        let mut proof_hashes_slices = Vec::<T::Hash>::with_capacity(hashes_count);
+
+        for i in 0..hashes_count {
+            let slice_start = i * hash_size;
+            let slice_end = (i + 1) * hash_size;
+            let slice = bytes.get(slice_start..slice_end).unwrap();
+            let vec = Vec::<u8>::try_from(slice).unwrap();
+            match T::Hash::try_from(vec) {
+                Ok(val) => proof_hashes_slices.push(val),
+                Err(_) => return Err(Error::vec_to_hash_conversion_error()),
+            }
+        }
 
         Ok(Self::new(proof_hashes_slices))
     }
