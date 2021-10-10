@@ -130,7 +130,7 @@ pub mod from_bytes {
             249, 74,
         ];
 
-        let proof = MerkleProof::<Sha256>::from_bytes(bytes).unwrap();
+        let proof = MerkleProof::<Sha256>::from_bytes(&bytes).unwrap();
         let hex_hashes = proof.hex_proof_hashes();
 
         assert_eq!(hex_hashes, expected_proof_hashes);
@@ -146,7 +146,7 @@ pub mod from_bytes {
             34, 24, 15, 37, 173, 131, 101, 181, 63,
         ];
 
-        let err = MerkleProof::<Sha256>::from_bytes(bytes).err().unwrap();
+        let err = MerkleProof::<Sha256>::from_bytes(&bytes).err().unwrap();
 
         assert_eq!(
             err.message(),

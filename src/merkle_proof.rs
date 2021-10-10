@@ -32,7 +32,7 @@ impl<T: Hasher> MerkleProof<T> {
     }
 
     /// Parses proof serialized as bytes
-    pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         let hash_size = T::hash_size();
 
         if bytes.len() % hash_size != 0 {
@@ -45,8 +45,11 @@ impl<T: Hasher> MerkleProof<T> {
         for i in 0..hashes_count {
             let slice_start = i * hash_size;
             let slice_end = (i + 1) * hash_size;
-            let slice = bytes.get(slice_start..slice_end).unwrap();
-            let vec = Vec::<u8>::try_from(slice).unwrap();
+            let slice = bytes
+                .get(slice_start..slice_end)
+                .ok_or_else(Error::vec_to_hash_conversion_error)?;
+            let vec =
+                Vec::<u8>::try_from(slice).map_err(|_| Error::vec_to_hash_conversion_error())?;
             match T::Hash::try_from(vec) {
                 Ok(val) => proof_hashes_slices.push(val),
                 Err(_) => return Err(Error::vec_to_hash_conversion_error()),
@@ -56,7 +59,7 @@ impl<T: Hasher> MerkleProof<T> {
         Ok(Self::new(proof_hashes_slices))
     }
 
-    /// Returns
+    /// Returns all hashes from the proof
     pub fn proof_hashes(&self) -> &[T::Hash] {
         &self.proof_hashes
     }
@@ -124,7 +127,7 @@ impl<T: Hasher> MerkleProof<T> {
         Ok(utils::collections::to_hex_string(&root))
     }
 
-    /// Verifies
+    /// Verifies the proof for a given set of leaves
     pub fn verify(
         &self,
         root: T::Hash,
