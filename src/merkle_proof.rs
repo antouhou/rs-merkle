@@ -1,7 +1,6 @@
-use std::convert::{Infallible, TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use crate::error::Error;
-use crate::error::ErrorKind;
 use crate::partial_tree::PartialTree;
 use crate::{utils, Hasher};
 

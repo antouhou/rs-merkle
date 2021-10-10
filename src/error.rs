@@ -38,9 +38,7 @@ impl Error {
     pub fn vec_to_hash_conversion_error() -> Self {
         Self::new(
             ErrorKind::ProofParsingError,
-            format!(
-                "Couldn't convert proof hash data into Hasher::Hash",
-            ),
+            "Couldn't convert proof hash data into Hasher::Hash".to_string(),
         )
     }
 

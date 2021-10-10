@@ -1,5 +1,4 @@
 use std::convert::TryFrom;
-use std::fmt::Debug;
 use std::mem;
 
 /// Hasher is a trait used to provide a hashing algorithm for the library.
