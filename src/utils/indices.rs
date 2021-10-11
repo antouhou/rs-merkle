@@ -1,10 +1,5 @@
 use crate::utils;
-use std::collections::{HashMap};
-
-pub struct LayerInfo {
-    index: usize,
-    leaves_count: usize,
-}
+use std::collections::HashMap;
 
 pub fn is_left_index(index: usize) -> bool {
     index % 2 == 0
@@ -27,7 +22,7 @@ pub fn parent_index(index: usize) -> usize {
     if is_left_index(index) {
         return index / 2;
     }
-        return get_sibling_index(index) / 2;
+    get_sibling_index(index) / 2
 }
 
 pub fn parent_indices(indices: &[usize]) -> Vec<usize> {
@@ -44,10 +39,6 @@ pub fn tree_depth(leaves_count: usize) -> usize {
     }
 }
 
-pub fn max_leaves_count_at_depth(depth: usize) -> usize {
-    return (2 as u32).pow(depth as u32) as usize;
-}
-
 pub fn uneven_layers(tree_leaves_count: usize) -> HashMap<usize, usize> {
     let mut leaves_count = tree_leaves_count;
     let depth = tree_depth(tree_leaves_count);
@@ -57,16 +48,19 @@ pub fn uneven_layers(tree_leaves_count: usize) -> HashMap<usize, usize> {
     for index in 0..depth {
         let uneven_layer = leaves_count % 2 != 0;
         if uneven_layer {
-            uneven_layers.insert(index, leaves_count.clone());
+            uneven_layers.insert(index, leaves_count);
         }
         leaves_count = div_ceil(leaves_count, 2);
     }
 
-    return uneven_layers;
+    uneven_layers
 }
 
 /// Returns layered proof indices
-pub fn proof_indices_by_layers(sorted_leaf_indices: &[usize], leaves_count: usize) -> Vec<Vec<usize>> {
+pub fn proof_indices_by_layers(
+    sorted_leaf_indices: &[usize],
+    leaves_count: usize,
+) -> Vec<Vec<usize>> {
     let depth = tree_depth(leaves_count);
     let uneven_layers = uneven_layers(leaves_count);
 
@@ -78,8 +72,10 @@ pub fn proof_indices_by_layers(sorted_leaf_indices: &[usize], leaves_count: usiz
         // The last node of that layer doesn't have another hash to the right, so no need to include
         // that index
         if let Some(leaves_count) = uneven_layers.get(&layer_index) {
-            if layer_nodes.last().unwrap() == &(leaves_count - 1) {
-                sibling_indices.pop();
+            if let Some(layer_last_node_index) = layer_nodes.last() {
+                if *layer_last_node_index == leaves_count - 1 {
+                    sibling_indices.pop();
+                }
             }
         }
 
