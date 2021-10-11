@@ -26,7 +26,7 @@ between them over the network. In Bitcoin, Merkle Trees are used to verify that
 a transaction was included into the block without downloading the whole block 
 contents. ZFS uses Merkle Tees to quickly verify data integrity, offering
 protection from silent data corruption caused by phantom writes, bugs in disk
-firmware, power surges, etc.
+firmware, power surges, and other causes.
 
 ## Usage
 
