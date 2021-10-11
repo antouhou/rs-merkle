@@ -46,7 +46,7 @@ pub mod proof {
 
         let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
         let proof = merkle_tree.proof(&indices_to_prove);
-        let proof_hashes = proof.hex_proof_hashes();
+        let proof_hashes = proof.proof_hashes_hex();
 
         assert_eq!(proof_hashes, expected_proof_hashes)
     }

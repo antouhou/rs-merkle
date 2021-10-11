@@ -21,7 +21,7 @@ pub mod root {
         let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
         let proof = merkle_tree.proof(&indices_to_prove);
         let extracted_root = proof
-            .hex_root(
+            .root_hex(
                 &indices_to_prove,
                 &leaves_to_prove,
                 test_data.leaf_values.len(),
@@ -131,7 +131,7 @@ pub mod from_bytes {
         ];
 
         let proof = MerkleProof::<Sha256>::from_bytes(&bytes).unwrap();
-        let hex_hashes = proof.hex_proof_hashes();
+        let hex_hashes = proof.proof_hashes_hex();
 
         assert_eq!(hex_hashes, expected_proof_hashes);
     }
