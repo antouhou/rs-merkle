@@ -14,13 +14,13 @@ tree state, similarly to Git.
 [available on crates.io](https://crates.io/crates/rs_merkle), and 
 [API Documentation is available on docs.rs](https://docs.rs/rs_merkle/).
 
-## About merkle trees
+## About Merkle trees
 
 Merkle trees, also known as hash trees, are used to verify that two or more 
 parties have the same data without exchanging the entire data collection.
 
-Merkle trees are used in Git, Mercurial, ZFS, IPFS, Bitcoin, Ethereum, Cassandra
-, and many more. In Git, for example, Merkle trees are used to find a delta 
+Merkle trees are used in Git, Mercurial, ZFS, IPFS, Bitcoin, Ethereum, Cassandra,
+and many more. In Git, for example, Merkle trees are used to find a delta 
 between the local and remote repository states to transfer only the difference 
 between them over the network. In Bitcoin, Merkle trees are used to verify that 
 a transaction was included in the block without downloading the whole block 
