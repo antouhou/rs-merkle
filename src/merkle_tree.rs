@@ -16,29 +16,40 @@ use crate::{utils, Hasher, MerkleProof};
 /// ## Basic usage for cryptocurrency proofs:
 ///
 /// ```
-/// use rs_merkle::{MerkleTree, algorithms::Sha256, Hasher};
-///
+/// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+/// # use std::convert::TryFrom;
+/// #
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let leaf_values = ["a", "b", "c", "d", "e", "f"];
-/// let expected_root_hex = "1f7379539707bcaea00564168d1d4d626b09b73f8a2a365234c62d763f854da2";
 /// let leaves: Vec<[u8; 32]> = leaf_values
 ///         .iter()
 ///         .map(|x| Sha256::hash(x.as_bytes().to_vec().as_ref()))
 ///         .collect();
 ///
 /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
-/// let hex_root = merkle_tree.root_hex().unwrap();
-///
-/// assert_eq!(hex_root, expected_root_hex);
-///
 /// let indices_to_prove = vec![3, 4];
+/// let leaves_to_prove = leaves.get(3..5).ok_or("can't get leaves to prove")?;
 /// let merkle_proof = merkle_tree.proof(&indices_to_prove);
+/// let merkle_root = merkle_tree.root().ok_or("couldn't get the merkle root")?;
+/// // Serialize proof to pass it to the client
+/// let proof_bytes = merkle_proof.to_bytes();
+///
+/// // Parse proof back on the client
+/// let proof = MerkleProof::<Sha256>::try_from(proof_bytes)?;
+///
+/// assert_eq!(proof.verify(merkle_root, &indices_to_prove, leaves_to_prove, leaves.len()), true);
+/// # Ok(())
+/// # }
+///
 /// ```
 ///
 /// ## Advanced usage with rolling several commits back
 ///
 /// ```
-/// use rs_merkle::{MerkleTree, algorithms::Sha256, Hasher};
-///
+/// # use rs_merkle::{MerkleTree, algorithms::Sha256, Hasher, Error};
+/// #
+/// #
+/// # fn main() -> Result<(), Error> {
 /// let leaf_values = ["a", "b", "c", "d", "e", "f"];
 /// let expected_root_hex = "1f7379539707bcaea00564168d1d4d626b09b73f8a2a365234c62d763f854da2";
 /// let leaves: Vec<[u8; 32]> = leaf_values
@@ -90,6 +101,8 @@ use crate::{utils, Hasher, MerkleProof};
 ///
 /// // Rolling back to the state after the very first commit
 /// assert_eq!(merkle_tree.root_hex().unwrap(), expected_root_hex);
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Clone)]
 pub struct MerkleTree<T: Hasher> {

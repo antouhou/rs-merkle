@@ -6,16 +6,19 @@
 //! and transfer only the delta. In Bitcoin, Merkle Trees are used to verify that a transaction was
 //! included into the block without downloading the whole block contents.
 
+pub use error::Error;
+pub use error::ErrorKind;
 pub use hasher::Hasher;
 pub use merkle_proof::MerkleProof;
 pub use merkle_tree::MerkleTree;
 pub use partial_tree::PartialTree;
 
+mod error;
 mod hasher;
 mod merkle_proof;
 mod merkle_tree;
 mod partial_tree;
+#[doc(hidden)]
+pub mod utils;
 
 pub mod algorithms;
-pub mod error;
-mod utils;

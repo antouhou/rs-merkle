@@ -60,6 +60,9 @@ impl<T: Hasher> MerkleProof<T> {
         leaf_hashes: &[T::Hash],
         total_leaves_count: usize,
     ) -> Result<T::Hash, Error> {
+        if leaf_indices.len() != leaf_hashes.len() {
+            return Err(Error::leaves_indices_count_mismatch(leaf_indices.len(), leaf_hashes.len()));
+        }
         let tree_depth = utils::indices::tree_depth(total_leaves_count);
 
         // Zipping indices and hashes into a vector of (original_index_in_tree, leaf_hash)
