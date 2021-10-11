@@ -31,17 +31,22 @@ impl<T: Hasher> MerkleProof<T> {
         MerkleProof { proof_hashes }
     }
 
-    /// Parses proof serialized as bytes
+    /// Creates a proof from a slice of bytes. For more details and examples, please see
+    /// [`try_from`](MerkleProof::try_from)
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         Self::try_from(bytes)
     }
 
-    /// Returns all hashes from the proof
+    /// Returns all hashes from the proof, sorted from the left to right,
+    /// bottom to top.
     pub fn proof_hashes(&self) -> &[T::Hash] {
         &self.proof_hashes
     }
 
-    pub fn hex_proof_hashes(&self) -> Vec<String> {
+    /// Returns all hashes from the proof, sorted from the left to right,
+    /// bottom to top, as a vector of lower hex strings.
+    /// For a slice of `&[T::Hash]`, see [`proof_hashes`](MerkleProof::proof_hashes)
+    pub fn proof_hashes_hex(&self) -> Vec<String> {
         self.proof_hashes
             .iter()
             .map(utils::collections::to_hex_string)
@@ -94,7 +99,7 @@ impl<T: Hasher> MerkleProof<T> {
     }
 
     /// Calculates the root and serializes it into a hex string
-    pub fn hex_root(
+    pub fn root_hex(
         &self,
         leaf_indices: &[usize],
         leaf_hashes: &[T::Hash],
@@ -133,6 +138,24 @@ impl<T: Hasher> MerkleProof<T> {
 impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
     type Error = Error;
 
+    /// Parses proof serialized to a collection of bytes. Consumes passed vector.
+    ///
+    /// # Example
+    /// ```
+    /// use std::convert::TryFrom;
+    /// use rs_merkle::MerkleProof;
+    ///
+    /// let proof_bytes: Vec<u8> = vec![
+    ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+    ///     2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198, 37, 47, 16, 200, 54, 16,
+    ///     235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228, 209, 215, 188, 250,
+    ///     137, 215, 36, 138, 130, 217, 241, 17, 229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79,
+    ///     34, 24, 15, 37, 173, 131, 101, 181, 63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99,
+    ///     249, 74,
+    /// ];
+    ///
+    /// let proof_result = MerkleProof::try_from(proof_bytes)?;
+    /// ```
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         MerkleProof::from_bytes(&bytes)
     }
@@ -141,6 +164,24 @@ impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
 impl<T: Hasher> TryFrom<&[u8]> for MerkleProof<T> {
     type Error = Error;
 
+    /// Parses proof serialized to a collection of bytes
+    ///
+    /// # Example
+    /// ```
+    /// use std::convert::TryFrom;
+    /// use rs_merkle::MerkleProof;
+    ///
+    /// let proof_bytes: Vec<u8> = vec![
+    ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+    ///     2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198, 37, 47, 16, 200, 54, 16,
+    ///     235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228, 209, 215, 188, 250,
+    ///     137, 215, 36, 138, 130, 217, 241, 17, 229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79,
+    ///     34, 24, 15, 37, 173, 131, 101, 181, 63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99,
+    ///     249, 74,
+    /// ];
+    ///
+    /// let proof_result = MerkleProof::try_from(&proof_bytes);
+    /// ```
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         let hash_size = T::hash_size();
 
