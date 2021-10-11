@@ -35,9 +35,9 @@ pub trait Hasher: Clone {
     /// # Trait bounds
     /// `Copy` is required as the hash needs to be copied to be concatenated/propagated
     /// when constructing nodes.
-    /// `PartialEq` is required to compare equality when verifying proof.
-    /// `Into<Vec<u8>>` is required to be able to serialize proof.
-    /// `TryFrom<Vec<u8>>` is required to parse hashes from a serialized proof.
+    /// `PartialEq` is required to compare equality when verifying proof
+    /// `Into<Vec<u8>>` is required to be able to serialize proof
+    /// `TryFrom<Vec<u8>>` is required to parse hashes from a serialized proof
     type Hash: Copy + PartialEq + Into<Vec<u8>> + TryFrom<Vec<u8>>;
 
     /// This associated function takes arbitrary bytes and returns hash of it.

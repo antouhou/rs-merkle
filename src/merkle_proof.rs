@@ -33,30 +33,7 @@ impl<T: Hasher> MerkleProof<T> {
 
     /// Parses proof serialized as bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        let hash_size = T::hash_size();
-
-        if bytes.len() % hash_size != 0 {
-            return Err(Error::wrong_proof_size(bytes.len(), hash_size));
-        }
-
-        let hashes_count = bytes.len() / hash_size;
-        let mut proof_hashes_slices = Vec::<T::Hash>::with_capacity(hashes_count);
-
-        for i in 0..hashes_count {
-            let slice_start = i * hash_size;
-            let slice_end = (i + 1) * hash_size;
-            let slice = bytes
-                .get(slice_start..slice_end)
-                .ok_or_else(Error::vec_to_hash_conversion_error)?;
-            let vec =
-                Vec::<u8>::try_from(slice).map_err(|_| Error::vec_to_hash_conversion_error())?;
-            match T::Hash::try_from(vec) {
-                Ok(val) => proof_hashes_slices.push(val),
-                Err(_) => return Err(Error::vec_to_hash_conversion_error()),
-            }
-        }
-
-        Ok(Self::new(proof_hashes_slices))
+        Self::try_from(bytes)
     }
 
     /// Returns all hashes from the proof
@@ -150,5 +127,44 @@ impl<T: Hasher> MerkleProof<T> {
             .map(|hash| hash.into())
             .collect();
         vectors.iter().cloned().flatten().collect()
+    }
+}
+
+impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
+    type Error = Error;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        MerkleProof::from_bytes(&bytes)
+    }
+}
+
+impl<T: Hasher> TryFrom<&[u8]> for MerkleProof<T> {
+    type Error = Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        let hash_size = T::hash_size();
+
+        if bytes.len() % hash_size != 0 {
+            return Err(Error::wrong_proof_size(bytes.len(), hash_size));
+        }
+
+        let hashes_count = bytes.len() / hash_size;
+        let mut proof_hashes_slices = Vec::<T::Hash>::with_capacity(hashes_count);
+
+        for i in 0..hashes_count {
+            let slice_start = i * hash_size;
+            let slice_end = (i + 1) * hash_size;
+            let slice = bytes
+                .get(slice_start..slice_end)
+                .ok_or_else(Error::vec_to_hash_conversion_error)?;
+            let vec =
+                Vec::<u8>::try_from(slice).map_err(|_| Error::vec_to_hash_conversion_error())?;
+            match T::Hash::try_from(vec) {
+                Ok(val) => proof_hashes_slices.push(val),
+                Err(_) => return Err(Error::vec_to_hash_conversion_error()),
+            }
+        }
+
+        Ok(Self::new(proof_hashes_slices))
     }
 }
