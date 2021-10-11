@@ -27,6 +27,15 @@ between them over the network. In Bitcoin, Merkle Trees are used to verify that
 a transaction was included into the block without downloading the whole block 
 contents.
 
+## Usage
+
+Add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+rs_merkle = "0.2"
+```
+
 ## Documentation
 
 [Documentation is available on docs.rs](https://docs.rs/rs_merkle/).
