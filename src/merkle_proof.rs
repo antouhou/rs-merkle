@@ -143,7 +143,7 @@ impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
     /// # Example
     /// ```
     /// use std::convert::TryFrom;
-    /// use rs_merkle::MerkleProof;
+    /// use rs_merkle::{MerkleProof, algorithms::Sha256};
     ///
     /// let proof_bytes: Vec<u8> = vec![
     ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
@@ -154,7 +154,7 @@ impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
     ///     249, 74,
     /// ];
     ///
-    /// let proof_result = MerkleProof::try_from(proof_bytes)?;
+    /// let proof_result = MerkleProof::<Sha256>::try_from(proof_bytes);
     /// ```
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         MerkleProof::from_bytes(&bytes)
@@ -169,7 +169,7 @@ impl<T: Hasher> TryFrom<&[u8]> for MerkleProof<T> {
     /// # Example
     /// ```
     /// use std::convert::TryFrom;
-    /// use rs_merkle::MerkleProof;
+    /// use rs_merkle::{MerkleProof, algorithms::Sha256};
     ///
     /// let proof_bytes: Vec<u8> = vec![
     ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
@@ -180,7 +180,7 @@ impl<T: Hasher> TryFrom<&[u8]> for MerkleProof<T> {
     ///     249, 74,
     /// ];
     ///
-    /// let proof_result = MerkleProof::try_from(&proof_bytes);
+    /// let proof_result = MerkleProof::<Sha256>::try_from(proof_bytes.as_slice());
     /// ```
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         let hash_size = T::hash_size();
