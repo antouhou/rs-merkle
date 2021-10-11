@@ -1,6 +1,11 @@
-# Rs-merkle
+# rs-merkle
 
-Rs-merkle is the most advanced Merkle Tree library for Rust.
+[![Rayon crate](https://img.shields.io/crates/v/rs_merkle.svg)](https://crates.io/crates/rs_merkle)
+[![Rayon documentation](https://docs.rs/rs_merkle/badge.svg)](https://docs.rs/rs_merkle)
+[![test](https://github.com/antouhou/rs_merkle/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/antouhou/rs_merkle/actions)
+[![build status](https://github.com/antouhou/rs_merkle/workflows/master/badge.svg)](https://github.com/antouhou/rs_merkle/actions)
+
+rs-merkle is the most advanced Merkle Tree library for Rust.
 Basic features include building a merkle tree, 
 creation and verification of merkle proofs, including multi-proofs.
 Advanced features include making transactional changes to a tree and rolling 
