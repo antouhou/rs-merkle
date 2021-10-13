@@ -35,7 +35,7 @@ pub fn setup() -> TestData {
     let expected_root_hex = "1f7379539707bcaea00564168d1d4d626b09b73f8a2a365234c62d763f854da2";
     let leaf_hashes = leaf_values
         .iter()
-        .map(|x| Sha256::hash(x.as_bytes().to_vec().as_ref()))
+        .map(|x| Sha256::hash(x.as_bytes()))
         .collect();
 
     TestData {
@@ -80,7 +80,7 @@ pub fn setup_proof_test_cases() -> Vec<ProofTestCases> {
 
             let leaves: Vec<[u8; 32]> = tree_elements
                 .iter()
-                .map(|x| Sha256::hash(x.as_bytes().to_vec().as_ref()))
+                .map(|x| Sha256::hash(x.as_bytes()))
                 .collect();
 
             let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);

@@ -76,7 +76,7 @@ pub mod commit {
         assert_eq!(root, expected_root);
 
         let expected_root = "e2a80e0e872a6c6eaed37b4c1f220e1935004805585b5f99617e48e9c8fe4034";
-        let leaf = Sha256::hash("g".as_bytes().to_vec().as_ref());
+        let leaf = Sha256::hash("g".as_bytes());
         merkle_tree.insert(leaf);
 
         assert_eq!(
@@ -90,8 +90,8 @@ pub mod commit {
         merkle_tree.commit();
 
         let mut new_leaves = vec![
-            Sha256::hash("h".as_bytes().to_vec().as_ref()),
-            Sha256::hash("k".as_bytes().to_vec().as_ref()),
+            Sha256::hash("h".as_bytes()),
+            Sha256::hash("k".as_bytes()),
         ];
         merkle_tree.append(&mut new_leaves);
 
@@ -126,7 +126,7 @@ pub mod rollback {
         let expected_root_hex = "1f7379539707bcaea00564168d1d4d626b09b73f8a2a365234c62d763f854da2";
         let leaves: Vec<[u8; 32]> = leaf_values
             .iter()
-            .map(|x| Sha256::hash(x.as_bytes().to_vec().as_ref()))
+            .map(|x| Sha256::hash(x.as_bytes()))
             .collect();
 
         let mut merkle_tree: MerkleTree<Sha256> = MerkleTree::new();
@@ -142,7 +142,7 @@ pub mod rollback {
         );
 
         // Adding a new leaf
-        merkle_tree.insert(Sha256::hash("g".as_bytes().to_vec().as_ref()));
+        merkle_tree.insert(Sha256::hash("g".as_bytes()));
 
         // Uncommitted root must reflect the insert
         assert_eq!(
@@ -161,8 +161,8 @@ pub mod rollback {
         // Adding some more leaves
         merkle_tree.append(
             vec![
-                Sha256::hash("h".as_bytes().to_vec().as_ref()),
-                Sha256::hash("k".as_bytes().to_vec().as_ref()),
+                Sha256::hash("h".as_bytes()),
+                Sha256::hash("k".as_bytes()),
             ]
             .as_mut(),
         );

@@ -73,7 +73,10 @@ impl Error {
     pub fn leaves_indices_count_mismatch(indices_len: usize, leaves_len: usize) -> Self {
         Self::new(
             ErrorKind::LeavesIndicesCountMismatch,
-            format!("leaves indices count doesn't match leaves count: {} and {}", indices_len, leaves_len),
+            format!(
+                "leaves indices count doesn't match leaves count: {} and {}",
+                indices_len, leaves_len
+            ),
         )
     }
 
