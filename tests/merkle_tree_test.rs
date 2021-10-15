@@ -89,10 +89,7 @@ pub mod commit {
 
         merkle_tree.commit();
 
-        let mut new_leaves = vec![
-            Sha256::hash("h".as_bytes()),
-            Sha256::hash("k".as_bytes()),
-        ];
+        let mut new_leaves = vec![Sha256::hash("h".as_bytes()), Sha256::hash("k".as_bytes())];
         merkle_tree.append(&mut new_leaves);
 
         assert_eq!(
@@ -159,13 +156,8 @@ pub mod rollback {
         );
 
         // Adding some more leaves
-        merkle_tree.append(
-            vec![
-                Sha256::hash("h".as_bytes()),
-                Sha256::hash("k".as_bytes()),
-            ]
-            .as_mut(),
-        );
+        merkle_tree
+            .append(vec![Sha256::hash("h".as_bytes()), Sha256::hash("k".as_bytes())].as_mut());
 
         // Checking that the uncommitted root has changed, but the committed one hasn't
         assert_eq!(
