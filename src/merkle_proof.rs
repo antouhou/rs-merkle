@@ -45,7 +45,7 @@ impl<T: Hasher> MerkleProof<T> {
 
     /// Returns all hashes from the proof, sorted from the left to right,
     /// bottom to top, as a vector of lower hex strings.
-    /// For a slice of `&[T::Hash]`, see [`proof_hashes`](MerkleProof::proof_hashes)
+    /// For a slice of `&[Hasher::Hash]`, see [`proof_hashes`](MerkleProof::proof_hashes)
     pub fn proof_hashes_hex(&self) -> Vec<String> {
         self.proof_hashes
             .iter()
