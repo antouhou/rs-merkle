@@ -25,10 +25,9 @@ pub mod root {
                 &indices_to_prove,
                 &leaves_to_prove,
                 test_data.leaf_values.len(),
-            )
-            .unwrap();
+            );
 
-        assert_eq!(extracted_root, expected_root);
+        assert_eq!(extracted_root, Ok(expected_root.to_string()));
 
         let test_preparation_started = Instant::now();
         let test_cases = common::setup_proof_test_cases();

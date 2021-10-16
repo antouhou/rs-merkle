@@ -149,14 +149,16 @@ impl<T: Hasher> MerkleTree<T> {
     ///
     /// # Example
     /// // TODO
-    pub fn insert(&mut self, leaf: T::Hash) {
-        self.uncommitted_leaves.push(leaf)
+    pub fn insert(&mut self, leaf: T::Hash) -> &mut Self {
+        self.uncommitted_leaves.push(leaf);
+        self
     }
 
     /// Appends leaves to the tree. Behaves similarly to [`commit`](MerkleTree::commit), but for a list of items.
     /// Takes ownership of the elements of the [`std::vec::Vec<T>`], similarly to [`append`](std::vec::Vec::append) of a [`std::vec::Vec<T>`]
-    pub fn append(&mut self, leaves: &mut Vec<T::Hash>) {
-        self.uncommitted_leaves.append(leaves)
+    pub fn append(&mut self, leaves: &mut Vec<T::Hash>) -> &mut Self {
+        self.uncommitted_leaves.append(leaves);
+        self
     }
 
     /// Calculates the root of the uncommitted changes as if they were committed.
@@ -179,6 +181,7 @@ impl<T: Hasher> MerkleTree<T> {
         if let Some(diff) = self.uncommitted_diff() {
             self.history.push(diff.clone());
             self.current_working_tree.merge_unverified(diff);
+            self.uncommitted_leaves.clear();
         }
     }
 
@@ -206,11 +209,20 @@ impl<T: Hasher> MerkleTree<T> {
     /// Creates a diff from a changes that weren't committed to the main tree yet. Can be used
     /// to get uncommitted root or can be merged with the main tree
     fn uncommitted_diff(&self) -> Option<PartialTree<T>> {
+        if self.uncommitted_leaves.is_empty() {
+            return None;
+        }
+
+        let mut committed_leaves_count = 0;
+        if let Some(leaves) = self.leaves() {
+            committed_leaves_count = leaves.len();
+        }
+
         let shadow_indices: Vec<usize> = self
             .uncommitted_leaves
             .iter()
             .enumerate()
-            .map(|(index, _)| index)
+            .map(|(index, _)| committed_leaves_count + index)
             .collect();
         // Tuples (index, hash) needed to construct a partial tree, since partial tree can't
         // maintain indices otherwise
