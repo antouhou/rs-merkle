@@ -36,8 +36,8 @@ impl<T: Hasher> MerkleProof<T> {
     /// ## Examples
     ///
     /// ```
-    /// use std::convert::TryFrom;
-    /// use rs_merkle::{MerkleProof, algorithms::Sha256};
+    /// # use std::convert::TryFrom;
+    /// # use rs_merkle::{MerkleProof, algorithms::Sha256};
     ///
     /// let proof_bytes: Vec<u8> = vec![
     ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
@@ -54,20 +54,44 @@ impl<T: Hasher> MerkleProof<T> {
         Self::try_from(bytes)
     }
 
-    /// Returns all hashes from the proof, sorted from the left to right,
-    /// bottom to top.
-    pub fn proof_hashes(&self) -> &[T::Hash] {
-        &self.proof_hashes
-    }
-
-    /// Returns all hashes from the proof, sorted from the left to right,
-    /// bottom to top, as a vector of lower hex strings.
-    /// For a slice of `&[Hasher::Hash]`, see [`proof_hashes`](MerkleProof::proof_hashes)
-    pub fn proof_hashes_hex(&self) -> Vec<String> {
-        self.proof_hashes
-            .iter()
-            .map(utils::collections::to_hex_string)
-            .collect()
+    /// Uses proof to verify that a given set of elements is contained in the original data
+    /// set the proof was made for.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaves = [
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    ///     Sha256::hash("c".as_bytes()),
+    /// ];
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    ///
+    /// let indices_to_prove = vec![0, 1];
+    /// let leaves_to_prove = leaves.get(0..2).ok_or("can't get leaves to prove")?;
+    ///
+    /// let proof = merkle_tree.proof(&indices_to_prove);
+    /// let root = merkle_tree.root().ok_or("couldn't get the merkle root")?;
+    ///
+    /// assert!(proof.verify(root, &indices_to_prove, leaves_to_prove, leaves.len()));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn verify(
+        &self,
+        root: T::Hash,
+        leaf_indices: &[usize],
+        leaf_hashes: &[T::Hash],
+        total_leaves_count: usize,
+    ) -> bool {
+        match self.root(leaf_indices, leaf_hashes, total_leaves_count) {
+            Ok(extracted_root) => extracted_root == root,
+            Err(_) => false,
+        }
     }
 
     /// Calculates merkle root based on provided leaves and proof hashes
@@ -132,18 +156,76 @@ impl<T: Hasher> MerkleProof<T> {
         Ok(utils::collections::to_hex_string(&root))
     }
 
-    /// Verifies the proof for a given set of leaves
-    pub fn verify(
-        &self,
-        root: T::Hash,
-        leaf_indices: &[usize],
-        leaf_hashes: &[T::Hash],
-        total_leaves_count: usize,
-    ) -> bool {
-        match self.root(leaf_indices, leaf_hashes, total_leaves_count) {
-            Ok(extracted_root) => extracted_root == root,
-            Err(_) => false,
-        }
+    /// Returns all hashes from the proof, sorted from the left to right,
+    /// bottom to top.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let proof_hashes: Vec<[u8; 32]> = vec![
+    ///     [
+    ///         46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147,
+    ///         162, 2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198
+    ///     ],
+    ///     [
+    ///         37, 47, 16, 200, 54, 16, 235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91,
+    ///         228, 209, 215, 188, 250, 137, 215, 36, 138, 130, 217, 241, 17
+    ///     ],
+    ///     [
+    ///         229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79, 34, 24, 15, 37, 173, 131, 101,
+    ///         181, 63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99, 249, 74
+    ///     ],
+    /// ];
+    /// let proof_hashes_copy = proof_hashes.clone();
+    ///
+    /// let proof = MerkleProof::<Sha256>::new(proof_hashes_copy);
+    /// assert_eq!(proof.proof_hashes(), &proof_hashes);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn proof_hashes(&self) -> &[T::Hash] {
+        &self.proof_hashes
+    }
+
+    /// Returns all hashes from the proof, sorted from the left to right,
+    /// bottom to top, as a vector of lower hex strings.
+    /// For a slice of [`Hasher::Hash`], see [`MerkleProof::proof_hashes`]
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let proof_bytes: Vec<u8> = vec![
+    ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+    ///     2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198, 37, 47, 16, 200, 54, 16,
+    ///     235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228, 209, 215, 188, 250,
+    ///     137, 215, 36, 138, 130, 217, 241, 17, 229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79,
+    ///     34, 24, 15, 37, 173, 131, 101, 181, 63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99,
+    ///     249, 74,
+    /// ];
+    ///
+    /// let proof = MerkleProof::<Sha256>::from_bytes(proof_bytes.as_slice())?;
+    /// assert_eq!(
+    ///     proof.proof_hashes_hex(),
+    ///     vec![
+    ///         "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6".to_string(),
+    ///         "252f10c83610ebca1a059c0bae8255eba2f95be4d1d7bcfa89d7248a82d9f111".to_string(),
+    ///         "e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a".to_string()
+    ///     ]
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn proof_hashes_hex(&self) -> Vec<String> {
+        self.proof_hashes
+            .iter()
+            .map(utils::collections::to_hex_string)
+            .collect()
     }
 
     /// Serializes proof hashes to a flat vector of bytes

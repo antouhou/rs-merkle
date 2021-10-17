@@ -94,6 +94,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// assert!(proof.verify(root, &indices_to_prove, leaves_to_prove, leaves.len()));
     /// # Ok(())
     /// # }
+    /// ```
     pub fn root(&self) -> Option<T::Hash> {
         Some(self.layer_tuples().last()?.first()?.1)
     }
@@ -122,6 +123,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// );
     /// # Ok(())
     /// # }
+    /// ```
     pub fn root_hex(&self) -> Option<String> {
         let root = self.root()?;
         Some(utils::collections::to_hex_string(&root))
@@ -155,7 +157,7 @@ impl<T: Hasher> MerkleTree<T> {
 
             for index in helper_indices {
                 if let Some(tuple) = tree_layer.get(index) {
-                    helpers_layer.push(tuple.clone());
+                    helpers_layer.push(*tuple);
                 }
             }
 
@@ -194,7 +196,6 @@ impl<T: Hasher> MerkleTree<T> {
     /// # Ok(())
     /// # }
     /// ```
-    ///
     pub fn proof(&self, leaf_indices: &[usize]) -> MerkleProof<T> {
         MerkleProof::<T>::new(self.helper_nodes(leaf_indices))
     }
@@ -439,7 +440,6 @@ impl<T: Hasher> MerkleTree<T> {
     /// # Ok(())
     /// # }
     /// ```
-    ///
     pub fn abort_uncommitted(&mut self) {
         self.uncommitted_leaves.clear()
     }
@@ -488,7 +488,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # }
     /// ```
     pub fn leaves(&self) -> Option<Vec<T::Hash>> {
-        Some(self.layers().first()?.iter().cloned().collect())
+        Some(self.layers().first()?.to_vec())
     }
 
     /// Returns the number of leaves in the tree.
@@ -509,6 +509,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// assert_eq!(merkle_tree.leaves_len(), 3);
     /// # Ok(())
     /// # }
+    /// ```
     pub fn leaves_len(&self) -> usize {
         if let Some(leaves) = self.layer_tuples().first() {
             return leaves.len();
@@ -518,7 +519,7 @@ impl<T: Hasher> MerkleTree<T> {
     }
 
     fn leaves_tuples(&self) -> Option<&[(usize, T::Hash)]> {
-        Some(&self.layer_tuples().first()?)
+        Some(self.layer_tuples().first()?.as_slice())
     }
 
     /// Returns the whole tree, where the first layer is leaves and
@@ -551,7 +552,7 @@ impl<T: Hasher> MerkleTree<T> {
             return None;
         }
 
-        let mut committed_leaves_count = self.leaves_len();
+        let committed_leaves_count = self.leaves_len();
 
         let shadow_indices: Vec<usize> = self
             .uncommitted_leaves
@@ -569,7 +570,7 @@ impl<T: Hasher> MerkleTree<T> {
         let mut partial_tree_tuples = self.helper_node_tuples(&shadow_indices);
 
         // Figuring what tree height would be if we've committed the changes
-        let mut leaves_in_new_tree = self.leaves_len() + self.uncommitted_leaves.len();
+        let leaves_in_new_tree = self.leaves_len() + self.uncommitted_leaves.len();
         let uncommitted_tree_depth = utils::indices::tree_depth(leaves_in_new_tree);
 
         match partial_tree_tuples.first_mut() {
