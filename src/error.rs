@@ -42,7 +42,7 @@ impl Error {
     pub fn not_enough_helper_nodes() -> Self {
         Self::new(
             ErrorKind::NotEnoughHelperNodes,
-            String::from("Not enough hashes to reconstruct the root"),
+            String::from("not enough hashes to reconstruct the root"),
         )
     }
 
@@ -50,7 +50,7 @@ impl Error {
         Self::new(
             ErrorKind::SerializedProofSizeIsIncorrect,
             format!(
-                "Proof of size {} bytes can not be divided into chunks of {} bytes",
+                "proof of size {} bytes can not be divided into chunks of {} bytes",
                 proof_len, hash_size,
             ),
         )
@@ -59,14 +59,14 @@ impl Error {
     pub fn vec_to_hash_conversion_error() -> Self {
         Self::new(
             ErrorKind::HashConversionError,
-            "Couldn't convert proof hash data into Hasher::Hash".to_string(),
+            "couldn't convert proof hash data into Hasher::Hash".to_string(),
         )
     }
 
     pub fn not_enough_hashes_to_calculate_root() -> Self {
         Self::new(
             ErrorKind::NotEnoughHashesToCalculateRoot,
-            "Proof doesn't contain enough data to extract the root".to_string(),
+            "proof doesn't contain enough data to extract the root".to_string(),
         )
     }
 

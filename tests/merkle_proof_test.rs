@@ -149,7 +149,7 @@ pub mod from_bytes {
 
         assert_eq!(
             err.message(),
-            "Proof of size 84 bytes can not be divided into chunks of 32 bytes"
+            "proof of size 84 bytes can not be divided into chunks of 32 bytes"
         );
     }
 }
