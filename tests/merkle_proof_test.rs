@@ -3,7 +3,7 @@ mod common;
 pub mod root {
     use crate::common;
     use rayon::prelude::*;
-    use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree, Error};
+    use rs_merkle::{algorithms::Sha256, Error, Hasher, MerkleTree};
     use std::time::Instant;
 
     #[test]
@@ -20,12 +20,11 @@ pub mod root {
 
         let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
         let proof = merkle_tree.proof(&indices_to_prove);
-        let extracted_root= proof
-            .root_hex(
-                &indices_to_prove,
-                &leaves_to_prove,
-                test_data.leaf_values.len(),
-            )?;
+        let extracted_root = proof.root_hex(
+            &indices_to_prove,
+            &leaves_to_prove,
+            test_data.leaf_values.len(),
+        )?;
 
         assert_eq!(extracted_root, expected_root.to_string());
 
@@ -63,12 +62,11 @@ pub mod root {
 
             test_case.cases.par_iter().for_each(|case| {
                 let proof = merkle_tree.proof(&case.leaf_indices_to_prove);
-                let extracted_root = proof
-                    .root(
-                        &case.leaf_indices_to_prove,
-                        &case.leaf_hashes_to_prove,
-                        merkle_tree.leaves_len(),
-                    );
+                let extracted_root = proof.root(
+                    &case.leaf_indices_to_prove,
+                    &case.leaf_hashes_to_prove,
+                    merkle_tree.leaves_len(),
+                );
 
                 assert_eq!(extracted_root.ok(), root)
             });

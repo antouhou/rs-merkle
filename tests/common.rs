@@ -94,11 +94,9 @@ pub fn setup_proof_test_cases() -> Vec<ProofTestCases> {
                 .par_iter()
                 .cloned()
                 .map(|proof_elements| {
-                    let (indices, leaves2): (Vec<usize>, Vec<[u8; 32]>) = proof_elements.iter().cloned().unzip();
-                    MerkleProofTestCase::new(
-                        leaves2,
-                        indices,
-                    )
+                    let (indices, leaves2): (Vec<usize>, Vec<[u8; 32]>) =
+                        proof_elements.iter().cloned().unzip();
+                    MerkleProofTestCase::new(leaves2, indices)
                 })
                 .collect();
             let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);

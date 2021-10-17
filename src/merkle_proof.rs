@@ -6,13 +6,13 @@ use crate::{utils, Hasher};
 
 /// `MerkleProof` is used to parse, verify, calculate a root for merkle proofs.
 ///
-/// # Usage
+/// ## Usage
 ///
 /// MerkleProof requires specifying hashing algorithm and hash size in order to work.
 /// Check out the `Hasher` trait for examples. rs_merkle provides some built in `Hasher`
 /// implementations, for example `rs_merkle::algorithms::Sha256`
 ///
-/// # Example
+/// ## Examples
 ///
 /// ```
 /// use rs_merkle::{MerkleProof, algorithms::Sha256};
@@ -31,8 +31,25 @@ impl<T: Hasher> MerkleProof<T> {
         MerkleProof { proof_hashes }
     }
 
-    /// Creates a proof from a slice of bytes. For more details and examples, please see
-    /// [`try_from`](MerkleProof::try_from)
+    /// Creates a proof from a slice of bytes
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// use std::convert::TryFrom;
+    /// use rs_merkle::{MerkleProof, algorithms::Sha256};
+    ///
+    /// let proof_bytes: Vec<u8> = vec![
+    ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+    ///     2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198, 37, 47, 16, 200, 54, 16,
+    ///     235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228, 209, 215, 188, 250,
+    ///     137, 215, 36, 138, 130, 217, 241, 17, 229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79,
+    ///     34, 24, 15, 37, 173, 131, 101, 181, 63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99,
+    ///     249, 74,
+    /// ];
+    ///
+    /// let proof_result = MerkleProof::<Sha256>::from_bytes(proof_bytes.as_slice());
+    /// ```
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         Self::try_from(bytes)
     }
@@ -146,7 +163,8 @@ impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
 
     /// Parses proof serialized to a collection of bytes. Consumes passed vector.
     ///
-    /// # Example
+    /// # Examples
+    ///
     /// ```
     /// use std::convert::TryFrom;
     /// use rs_merkle::{MerkleProof, algorithms::Sha256};
@@ -172,7 +190,8 @@ impl<T: Hasher> TryFrom<&[u8]> for MerkleProof<T> {
 
     /// Parses proof serialized to a collection of bytes
     ///
-    /// # Example
+    /// ## Examples
+    ///
     /// ```
     /// use std::convert::TryFrom;
     /// use rs_merkle::{MerkleProof, algorithms::Sha256};

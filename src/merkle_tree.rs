@@ -43,16 +43,23 @@ impl<T: Hasher> MerkleTree<T> {
         }
     }
 
-    /// Returns the tree root - the top hash of the tree. Used in the inclusion proof verification
-    /// function.
+    /// Clones leave hashes and build the tree from them
     ///
     /// ## Examples
     ///
-    pub fn root(&self) -> Option<T::Hash> {
-        Some(self.layer_tuples().last()?.first()?.1)
-    }
-
-    /// Clones leave hashes and build the tree from them
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaves = [
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    ///     Sha256::hash("c".as_bytes()),
+    /// ];
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    /// # Ok(())
+    /// # }
     pub fn from_leaves(leaves: &[T::Hash]) -> Self {
         let mut tree = Self::new();
 
@@ -62,19 +69,62 @@ impl<T: Hasher> MerkleTree<T> {
         tree
     }
 
-    /// Returns Merkle tree root serialized as a hex string
-    pub fn root_hex(&self) -> Option<String> {
-        let root = self.root()?;
-        Some(utils::collections::to_hex_string(&root))
-    }
-
-    /// Returns tree depth. Tree depth is how many layers there is between
-    /// leaves and root
+    /// Returns the tree root - the top hash of the tree. Used in the inclusion proof verification.
     ///
     /// ## Examples
     ///
-    pub fn depth(&self) -> usize {
-        self.layer_tuples().len() - 1
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaves = [
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    ///     Sha256::hash("c".as_bytes()),
+    /// ];
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    ///
+    /// let indices_to_prove = vec![0, 1];
+    /// let leaves_to_prove = leaves.get(0..2).ok_or("can't get leaves to prove")?;
+    ///
+    /// let proof = merkle_tree.proof(&indices_to_prove);
+    /// let root = merkle_tree.root().ok_or("couldn't get the merkle root")?;
+    ///
+    /// assert!(proof.verify(root, &indices_to_prove, leaves_to_prove, leaves.len()));
+    /// # Ok(())
+    /// # }
+    pub fn root(&self) -> Option<T::Hash> {
+        Some(self.layer_tuples().last()?.first()?.1)
+    }
+
+    /// Similar to [`MerkleTree::root`], but returns a hex encoded string instead of
+    /// [`Hasher::Hash`].
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaves = [
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    ///     Sha256::hash("c".as_bytes()),
+    /// ];
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    /// let root = merkle_tree.root_hex().ok_or("couldn't get the merkle root")?;
+    ///
+    /// assert_eq!(
+    ///     root,
+    ///     "7075152d03a5cd92104887b476862778ec0c87be5c2fa1c0a90f87c49fad6eff".to_string()
+    /// );
+    /// # Ok(())
+    /// # }
+    pub fn root_hex(&self) -> Option<String> {
+        let root = self.root()?;
+        Some(utils::collections::to_hex_string(&root))
     }
 
     /// Returns helper nodes required to build a partial tree for the given indices
@@ -97,15 +147,15 @@ impl<T: Hasher> MerkleTree<T> {
         let mut current_layer_indices = leaf_indices.to_vec();
         let mut helper_nodes: Vec<Vec<(usize, T::Hash)>> = Vec::new();
 
-        for tree_layer in self.layers() {
+        for tree_layer in self.layer_tuples() {
             let mut helpers_layer = Vec::new();
             let siblings = utils::indices::sibling_indices(&current_layer_indices);
             // Filter all nodes that do not require an additional hash to be calculated
             let helper_indices = utils::collections::difference(&siblings, &current_layer_indices);
 
             for index in helper_indices {
-                if let Some(hash) = tree_layer.get(index) {
-                    helpers_layer.push((index, hash.clone()));
+                if let Some(tuple) = tree_layer.get(index) {
+                    helpers_layer.push(tuple.clone());
                 }
             }
 
@@ -124,8 +174,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
     /// # use std::convert::TryFrom;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let leaf_values = ["a", "b", "c", "d", "e", "f"];
-    /// let leaves: Vec<[u8; 32]> = leaf_values
+    /// let leaves: Vec<[u8; 32]> = ["a", "b", "c", "d", "e", "f"]
     ///     .iter()
     ///     .map(|x| Sha256::hash(x.as_bytes()))
     ///     .collect();
@@ -141,7 +190,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// // Parse proof back on the client
     /// let proof = MerkleProof::<Sha256>::try_from(proof_bytes)?;
     ///
-    /// assert_eq!(proof.verify(merkle_root, &indices_to_prove, leaves_to_prove, leaves.len()), true);
+    /// assert!(proof.verify(merkle_root, &indices_to_prove, leaves_to_prove, leaves.len()));
     /// # Ok(())
     /// # }
     /// ```
@@ -150,85 +199,117 @@ impl<T: Hasher> MerkleTree<T> {
         MerkleProof::<T>::new(self.helper_nodes(leaf_indices))
     }
 
-    /// Returns a slice of tree leaves, i.e. the slice of all the hashes that comprise the
-    /// base level of the tree.
-    ///
-    /// ## Examples
-    ///
-    pub fn leaves(&self) -> Option<Vec<T::Hash>> {
-        Some(self.layers().first()?.iter().cloned().collect())
-    }
-
-    pub fn leaves_tuples(&self) -> Option<&[(usize, T::Hash)]> {
-        Some(&self.layer_tuples().first()?)
-    }
-
-    /// Returns the number of leaves in the tree
-    pub fn leaves_len(&self) -> usize {
-        if let Some(leaves) = self.layer_tuples().first() {
-            return leaves.len();
-        }
-
-        0
-    }
-
-    /// Returns the whole tree, where the first layer is leaves and
-    /// consequent layers are nodes.
-    pub fn layers(&self) -> Vec<Vec<T::Hash>> {
-        self.current_working_tree.layer_nodes()
-    }
-
-    pub fn layer_tuples(&self) -> &[Vec<(usize, T::Hash)>] {
-        self.current_working_tree.layers()
-    }
-
-    /// Same as [`layers`](MerkleTree::layers), but serializes each hash as a hex string
-    pub fn layers_hex(&self) -> Vec<Vec<String>> {
-        self.layer_tuples()
-            .iter()
-            .map(|layer| {
-                layer
-                    .iter()
-                    .map(|(_, hash)| utils::collections::to_hex_string(hash))
-                    .collect()
-            })
-            .collect()
-    }
-
     /// Inserts a new leaf. Please note it won't modify the root just yet; For the changes
-    /// to be applied to the root, [`commit`](MerkleTree::commit) method should be called first. To get the root
-    /// of the new tree without applying the changes, you can use [`uncommitted_root`](MerkleTree::uncommitted_root)
+    /// to be applied to the root, [`MerkleTree::commit`] method should be called first. To get the
+    /// root of the new tree without applying the changes, you can use
+    /// [`MerkleTree::uncommitted_root`]
     ///
-    /// # Example
-    /// // TODO
+    /// # Examples
+    ///
+    /// Get the root after an insert:
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut merkle_tree = MerkleTree::<Sha256>::new();
+    /// merkle_tree.insert(Sha256::hash("a".as_bytes()));
+    ///
+    /// assert_eq!(merkle_tree.root(), None);
+    ///
+    /// merkle_tree.commit();
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     Some("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string())
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Inserts also can be chained with [`MerkleTree::commit`] for convenience:
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut merkle_tree = MerkleTree::<Sha256>::new();
+    /// merkle_tree
+    ///     .insert(Sha256::hash("a".as_bytes()))
+    ///     .commit();
+    ///
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     Some("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string())
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn insert(&mut self, leaf: T::Hash) -> &mut Self {
         self.uncommitted_leaves.push(leaf);
         self
     }
 
-    /// Appends leaves to the tree. Behaves similarly to [`commit`](MerkleTree::commit), but for a list of items.
-    /// Takes ownership of the elements of the [`std::vec::Vec<T>`], similarly to [`append`](std::vec::Vec::append) of a [`std::vec::Vec<T>`]
+    /// Appends leaves to the tree. Behaves similarly to [`MerkleTree::insert`], but for a list of
+    /// items. Takes ownership of the elements of the [`std::vec::Vec<T>`],
+    /// similarly to [`std::vec::Vec::append`].
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut merkle_tree = MerkleTree::<Sha256>::new();
+    /// let mut leaves = vec![
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    /// ];
+    /// merkle_tree
+    ///     .append(&mut leaves)
+    ///     .commit();
+    ///
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     Some("e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a".to_string())
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn append(&mut self, leaves: &mut Vec<T::Hash>) -> &mut Self {
         self.uncommitted_leaves.append(leaves);
         self
     }
 
-    /// Calculates the root of the uncommitted changes as if they were committed.
-    /// Will return the same hash as [`root`](MerkleTree::root) after [`commit`](MerkleTree::commit)
-    pub fn uncommitted_root(&self) -> Option<T::Hash> {
-        let shadow_tree = self.uncommitted_diff()?;
-        shadow_tree.root().cloned()
-    }
-
-    /// Same as `uncommitted_root`, but serialized to a hex string
-    pub fn uncommitted_root_hex(&self) -> Option<String> {
-        let root = self.uncommitted_root()?;
-        Some(utils::collections::to_hex_string(&root))
-    }
-
-    /// Commits changes made by [`insert`](MerkleTree::insert) and [`append`](MerkleTree::append)
+    /// Commits the changes made by [`MerkleTree::insert`] and [`MerkleTree::append`]
     /// and modifies the root.
-    /// Commits changes to the history, so the tree can be rolled back to any previous commit.
+    /// Commits are saved to the history, so the tree can be rolled back to any previous commit
+    /// using [`MerkleTree::rollback`]
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut merkle_tree = MerkleTree::<Sha256>::new();
+    /// let mut leaves = vec![
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    /// ];
+    /// merkle_tree.append(&mut leaves);
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     None
+    /// );
+    ///
+    /// merkle_tree.commit();
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     Some("e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a".to_string())
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn commit(&mut self) {
         if let Some(diff) = self.uncommitted_diff() {
             self.history.push(diff.clone());
@@ -237,14 +318,37 @@ impl<T: Hasher> MerkleTree<T> {
         }
     }
 
-    /// Aborts all uncommitted [`insert`](MerkleTree::insert) and [`append`](MerkleTree::append)
-    /// operations without applying them to the tree.
-    pub fn abort_uncommitted(&mut self) {
-        self.uncommitted_leaves.clear()
-    }
-
     /// Rolls back one commit and reverts tree to the previous state.
-    /// Removes the latest commit from the changes history
+    /// Removes the most recent commit from the history.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut merkle_tree = MerkleTree::<Sha256>::new();
+    ///
+    /// merkle_tree.insert(Sha256::hash("a".as_bytes())).commit();
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     Some("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string())
+    /// );
+    ///
+    /// merkle_tree.insert(Sha256::hash("b".as_bytes())).commit();
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     Some("e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a".to_string())
+    /// );
+    ///
+    /// // Rollback to the previous state
+    /// merkle_tree.rollback();
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     Some("ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb".to_string())
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn rollback(&mut self) {
         // Remove the most recent commit
         self.history.pop();
@@ -256,6 +360,188 @@ impl<T: Hasher> MerkleTree<T> {
         for commit in &self.history {
             self.current_working_tree.merge_unverified(commit.clone());
         }
+    }
+
+    /// Calculates the root of the uncommitted changes as if they were committed.
+    /// Will return the same hash as [`MerkleTree::root`] after [`MerkleTree::commit`]
+    ///
+    /// For examples, please check [`MerkleTree::uncommitted_root_hex`]
+    pub fn uncommitted_root(&self) -> Option<T::Hash> {
+        let shadow_tree = self.uncommitted_diff()?;
+        shadow_tree.root().cloned()
+    }
+
+    /// Calculates the root of the uncommitted changes as if they were committed. Serializes
+    /// the result as a hex string.
+    /// Will return the same hash as [`MerkleTree::root_hex`] after [`MerkleTree::commit`]
+    ///
+    /// ### Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut merkle_tree = MerkleTree::<Sha256>::new();
+    /// let mut leaves = vec![
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    /// ];
+    /// merkle_tree.append(&mut leaves);
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     None
+    /// );
+    /// assert_eq!(
+    ///      merkle_tree.uncommitted_root_hex(),
+    ///      Some("e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a".to_string())
+    /// );
+    ///
+    /// merkle_tree.commit();
+    /// assert_eq!(
+    ///     merkle_tree.root_hex(),
+    ///     Some("e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a".to_string())
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn uncommitted_root_hex(&self) -> Option<String> {
+        let root = self.uncommitted_root()?;
+        Some(utils::collections::to_hex_string(&root))
+    }
+
+    /// Aborts all uncommitted [`MerkleTree::insert`] and [`MerkleTree::append`]
+    /// operations without applying them to the tree.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut merkle_tree = MerkleTree::<Sha256>::new();
+    /// let mut leaves = vec![
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    /// ];
+    /// assert_eq!(
+    ///     merkle_tree.root(),
+    ///     None
+    /// );
+    ///
+    /// merkle_tree.append(&mut leaves);
+    /// merkle_tree.abort_uncommitted();
+    /// merkle_tree.commit();
+    ///
+    /// assert_eq!(
+    ///     merkle_tree.root(),
+    ///     None
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    pub fn abort_uncommitted(&mut self) {
+        self.uncommitted_leaves.clear()
+    }
+
+    /// Returns the tree depth. A tree depth is how many layers there is between the
+    /// leaves and the root
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaves = [
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    ///     Sha256::hash("c".as_bytes()),
+    /// ];
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    /// assert_eq!(merkle_tree.depth(), 2);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn depth(&self) -> usize {
+        self.layer_tuples().len() - 1
+    }
+
+    /// Returns a copy of the tree leaves - the base level of the tree.
+    ///
+    /// ### Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaves = [
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    ///     Sha256::hash("c".as_bytes()),
+    /// ];
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    /// assert_eq!(merkle_tree.leaves(), Some(leaves.to_vec()));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn leaves(&self) -> Option<Vec<T::Hash>> {
+        Some(self.layers().first()?.iter().cloned().collect())
+    }
+
+    /// Returns the number of leaves in the tree.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaves = [
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    ///     Sha256::hash("c".as_bytes()),
+    /// ];
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    /// assert_eq!(merkle_tree.leaves_len(), 3);
+    /// # Ok(())
+    /// # }
+    pub fn leaves_len(&self) -> usize {
+        if let Some(leaves) = self.layer_tuples().first() {
+            return leaves.len();
+        }
+
+        0
+    }
+
+    fn leaves_tuples(&self) -> Option<&[(usize, T::Hash)]> {
+        Some(&self.layer_tuples().first()?)
+    }
+
+    /// Returns the whole tree, where the first layer is leaves and
+    /// consequent layers are nodes.
+    fn layers(&self) -> Vec<Vec<T::Hash>> {
+        self.current_working_tree.layer_nodes()
+    }
+
+    fn layer_tuples(&self) -> &[Vec<(usize, T::Hash)>] {
+        self.current_working_tree.layers()
+    }
+
+    /// Same as [`MerkleTree::layers`], but serializes each hash as a hex string
+    fn layers_hex(&self) -> Vec<Vec<String>> {
+        self.layer_tuples()
+            .iter()
+            .map(|layer| {
+                layer
+                    .iter()
+                    .map(|(_, hash)| utils::collections::to_hex_string(hash))
+                    .collect()
+            })
+            .collect()
     }
 
     /// Creates a diff from a changes that weren't committed to the main tree yet. Can be used

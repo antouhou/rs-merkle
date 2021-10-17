@@ -4,6 +4,13 @@
 //! transactional changes to the tree and rolling back to any previously committed
 //! tree state, similarly to Git.
 //!
+//! The library has two main structs. The first one is [`MerkleTree`],
+//! which builds the tree that can be used to verify data integrity and produce a Merkle proof. The
+//! second is [`MerkleProof`], which can be used to verify the inclusion of an item in a set.
+//!
+//! The library is highly customizable. Hashing algorithm and the way how the tree is built
+//! can be configured through the [`Hasher`] trait.
+//!
 //! ## About Merkle trees
 //!
 //! Merkle trees, also known as hash trees, are used to verify that two or more
