@@ -53,7 +53,7 @@ pub mod proof {
 
 pub mod commit {
     use crate::common;
-    use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
+    use rs_merkle::{algorithms::Sha256, Error, Hasher, MerkleTree};
 
     #[test]
     pub fn should_give_correct_root_after_commit() {
@@ -67,18 +67,18 @@ pub mod commit {
         let merkle_tree2 = MerkleTree::<Sha256>::from_leaves(&leaf_hashes);
         // Adding leaves
         merkle_tree.append(leaf_hashes.clone().as_mut());
-        let root = merkle_tree.uncommitted_root_hex().unwrap();
+        let root = merkle_tree.uncommitted_root_hex();
 
-        assert_eq!(merkle_tree2.root_hex().unwrap(), expected_root);
-        assert_eq!(root, expected_root);
+        assert_eq!(merkle_tree2.root_hex(), Some(expected_root.to_string()));
+        assert_eq!(root, Some(expected_root.to_string()));
 
         let expected_root = "e2a80e0e872a6c6eaed37b4c1f220e1935004805585b5f99617e48e9c8fe4034";
         let leaf = Sha256::hash("g".as_bytes());
         merkle_tree.insert(leaf);
 
         assert_eq!(
-            merkle_tree.uncommitted_root_hex().unwrap(),
-            String::from(expected_root)
+            merkle_tree.uncommitted_root_hex(),
+            Some(expected_root.to_string())
         );
 
         // No changes were committed just yet, tree is empty
@@ -90,22 +90,22 @@ pub mod commit {
         merkle_tree.append(&mut new_leaves);
 
         assert_eq!(
-            merkle_tree.root_hex().unwrap(),
-            String::from("e2a80e0e872a6c6eaed37b4c1f220e1935004805585b5f99617e48e9c8fe4034")
+            merkle_tree.root_hex(),
+            Some("e2a80e0e872a6c6eaed37b4c1f220e1935004805585b5f99617e48e9c8fe4034".to_string())
         );
         assert_eq!(
-            merkle_tree.uncommitted_root_hex().unwrap(),
-            String::from("09b6890b23e32e607f0e5f670ab224e36af8f6599cbe88b468f4b0f761802dd6")
+            merkle_tree.uncommitted_root_hex(),
+            Some("09b6890b23e32e607f0e5f670ab224e36af8f6599cbe88b468f4b0f761802dd6".to_string())
         );
 
         merkle_tree.commit();
-        let leaves = merkle_tree.leaves().unwrap();
+        let leaves = merkle_tree.leaves().expect("expect the tree to have some leaves");
         let reconstructed_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
 
         // Check that the commit is applied correctly
         assert_eq!(
-            reconstructed_tree.root_hex().unwrap(),
-            String::from("09b6890b23e32e607f0e5f670ab224e36af8f6599cbe88b468f4b0f761802dd6")
+            reconstructed_tree.root_hex(),
+            Some("09b6890b23e32e607f0e5f670ab224e36af8f6599cbe88b468f4b0f761802dd6".to_string())
         );
         assert_eq!(reconstructed_tree.layers(), merkle_tree.layers());
     }

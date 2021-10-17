@@ -17,7 +17,10 @@ fn combine<T: Clone>(active: Vec<T>, rest: Vec<T>, mut combinations: Vec<Vec<T>>
         }
     } else {
         let mut next = active.clone();
-        next.push(rest.get(0).unwrap().clone());
+
+        if let Some(first) = rest.get(0) {
+            next.push(first.clone());
+        }
 
         combinations = combine(next, rest.clone().drain(1..).collect(), combinations);
         combinations = combine(active, rest.clone().drain(1..).collect(), combinations);
@@ -83,29 +86,23 @@ pub fn setup_proof_test_cases() -> Vec<ProofTestCases> {
                 .map(|x| Sha256::hash(x.as_bytes()))
                 .collect();
 
-            let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+            let tuples: Vec<(usize, [u8; 32])> = leaves.iter().cloned().enumerate().collect();
 
-            let indices = tree_elements
-                .iter()
-                .enumerate()
-                .map(|(index, _)| index)
-                .collect();
+            let possible_proof_elements_combinations = combinations(tuples);
 
-            let possible_proof_index_combinations = combinations(indices);
-
-            let cases: Vec<MerkleProofTestCase> = possible_proof_index_combinations
+            let cases: Vec<MerkleProofTestCase> = possible_proof_elements_combinations
                 .par_iter()
                 .cloned()
-                .map(|index_combination| {
+                .map(|proof_elements| {
+                    let (indices, leaves2): (Vec<usize>, Vec<[u8; 32]>) = proof_elements.iter().cloned().unzip();
                     MerkleProofTestCase::new(
-                        index_combination
-                            .iter()
-                            .map(|index| leaves.get(*index).unwrap().clone())
-                            .collect(),
-                        index_combination,
+                        leaves2,
+                        indices,
                     )
                 })
                 .collect();
+            let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+
             let case = ProofTestCases { merkle_tree, cases };
             case
         })

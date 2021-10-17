@@ -43,9 +43,13 @@ impl<T: Hasher> MerkleTree<T> {
         }
     }
 
-    /// Returns Merkle tree root
+    /// Returns the tree root - the top hash of the tree. Used in the inclusion proof verification
+    /// function.
+    ///
+    /// ## Examples
+    ///
     pub fn root(&self) -> Option<T::Hash> {
-        self.layers().last()?.first().cloned()
+        Some(self.layer_tuples().last()?.first()?.1)
     }
 
     /// Clones leave hashes and build the tree from them
@@ -66,8 +70,11 @@ impl<T: Hasher> MerkleTree<T> {
 
     /// Returns tree depth. Tree depth is how many layers there is between
     /// leaves and root
+    ///
+    /// ## Examples
+    ///
     pub fn depth(&self) -> usize {
-        self.layers().len() - 1
+        self.layer_tuples().len() - 1
     }
 
     /// Returns helper nodes required to build a partial tree for the given indices
@@ -97,13 +104,8 @@ impl<T: Hasher> MerkleTree<T> {
             let helper_indices = utils::collections::difference(&siblings, &current_layer_indices);
 
             for index in helper_indices {
-                match tree_layer.get(index) {
-                    Some(hash) => {
-                        helpers_layer.push((index, *hash));
-                    }
-                    // This means that there's no right sibling to the current index, thus
-                    // we don't need to include anything in the proof for that index
-                    None => continue,
+                if let Some(hash) = tree_layer.get(index) {
+                    helpers_layer.push((index, hash.clone()));
                 }
             }
 
@@ -114,14 +116,60 @@ impl<T: Hasher> MerkleTree<T> {
         helper_nodes
     }
 
-    /// Returns merkle proof required to prove inclusion of items at given indices
+    /// Returns merkle proof required to prove inclusion of items in a data set.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaf_values = ["a", "b", "c", "d", "e", "f"];
+    /// let leaves: Vec<[u8; 32]> = leaf_values
+    ///     .iter()
+    ///     .map(|x| Sha256::hash(x.as_bytes()))
+    ///     .collect();
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    /// let indices_to_prove = vec![3, 4];
+    /// let leaves_to_prove = leaves.get(3..5).ok_or("can't get leaves to prove")?;
+    /// let merkle_proof = merkle_tree.proof(&indices_to_prove);
+    /// let merkle_root = merkle_tree.root().ok_or("couldn't get the merkle root")?;
+    /// // Serialize proof to pass it to the client
+    /// let proof_bytes = merkle_proof.to_bytes();
+    ///
+    /// // Parse proof back on the client
+    /// let proof = MerkleProof::<Sha256>::try_from(proof_bytes)?;
+    ///
+    /// assert_eq!(proof.verify(merkle_root, &indices_to_prove, leaves_to_prove, leaves.len()), true);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     pub fn proof(&self, leaf_indices: &[usize]) -> MerkleProof<T> {
         MerkleProof::<T>::new(self.helper_nodes(leaf_indices))
     }
 
-    /// Returns tree leaves, i.e. the bottom level
+    /// Returns a slice of tree leaves, i.e. the slice of all the hashes that comprise the
+    /// base level of the tree.
+    ///
+    /// ## Examples
+    ///
     pub fn leaves(&self) -> Option<Vec<T::Hash>> {
-        self.layers().first().cloned()
+        Some(self.layers().first()?.iter().cloned().collect())
+    }
+
+    pub fn leaves_tuples(&self) -> Option<&[(usize, T::Hash)]> {
+        Some(&self.layer_tuples().first()?)
+    }
+
+    /// Returns the number of leaves in the tree
+    pub fn leaves_len(&self) -> usize {
+        if let Some(leaves) = self.layer_tuples().first() {
+            return leaves.len();
+        }
+
+        0
     }
 
     /// Returns the whole tree, where the first layer is leaves and
@@ -130,14 +178,18 @@ impl<T: Hasher> MerkleTree<T> {
         self.current_working_tree.layer_nodes()
     }
 
+    pub fn layer_tuples(&self) -> &[Vec<(usize, T::Hash)>] {
+        self.current_working_tree.layers()
+    }
+
     /// Same as [`layers`](MerkleTree::layers), but serializes each hash as a hex string
     pub fn layers_hex(&self) -> Vec<Vec<String>> {
-        self.layers()
+        self.layer_tuples()
             .iter()
             .map(|layer| {
                 layer
                     .iter()
-                    .map(utils::collections::to_hex_string)
+                    .map(|(_, hash)| utils::collections::to_hex_string(hash))
                     .collect()
             })
             .collect()
@@ -213,10 +265,7 @@ impl<T: Hasher> MerkleTree<T> {
             return None;
         }
 
-        let mut committed_leaves_count = 0;
-        if let Some(leaves) = self.leaves() {
-            committed_leaves_count = leaves.len();
-        }
+        let mut committed_leaves_count = self.leaves_len();
 
         let shadow_indices: Vec<usize> = self
             .uncommitted_leaves
@@ -234,10 +283,7 @@ impl<T: Hasher> MerkleTree<T> {
         let mut partial_tree_tuples = self.helper_node_tuples(&shadow_indices);
 
         // Figuring what tree height would be if we've committed the changes
-        let mut leaves_in_new_tree = self.uncommitted_leaves.len();
-        if let Some(committed_leaves) = self.leaves() {
-            leaves_in_new_tree += committed_leaves.len();
-        }
+        let mut leaves_in_new_tree = self.leaves_len() + self.uncommitted_leaves.len();
         let uncommitted_tree_depth = utils::indices::tree_depth(leaves_in_new_tree);
 
         match partial_tree_tuples.first_mut() {
