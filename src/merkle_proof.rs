@@ -94,7 +94,36 @@ impl<T: Hasher> MerkleProof<T> {
         }
     }
 
-    /// Calculates merkle root based on provided leaves and proof hashes
+    /// Calculates merkle root based on provided leaves and proof hashes. Used inside the
+    /// [`MerkleProof::verify`] method, but sometimes can be used on its own.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaves = [
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    ///     Sha256::hash("c".as_bytes()),
+    /// ];
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    ///
+    /// let indices_to_prove = vec![0, 1];
+    /// let leaves_to_prove = leaves.get(0..2).ok_or("can't get leaves to prove")?;
+    ///
+    /// let proof = merkle_tree.proof(&indices_to_prove);
+    /// let root = merkle_tree.root().ok_or("couldn't get the merkle root")?;
+    ///
+    /// assert_eq!(
+    ///     proof.root(&indices_to_prove, leaves_to_prove, leaves.len())?,
+    ///     root
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn root(
         &self,
         leaf_indices: &[usize],
@@ -145,7 +174,35 @@ impl<T: Hasher> MerkleProof<T> {
         }
     }
 
-    /// Calculates the root and serializes it into a hex string
+    /// Calculates the root and serializes it into a hex string.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaves = [
+    ///     Sha256::hash("a".as_bytes()),
+    ///     Sha256::hash("b".as_bytes()),
+    ///     Sha256::hash("c".as_bytes()),
+    /// ];
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    ///
+    /// let indices_to_prove = vec![0, 1];
+    /// let leaves_to_prove = leaves.get(0..2).ok_or("can't get leaves to prove")?;
+    ///
+    /// let proof = merkle_tree.proof(&indices_to_prove);
+    /// let root_hex = merkle_tree.root_hex().ok_or("couldn't get the merkle root")?;
+    ///
+    /// assert_eq!(
+    ///     proof.root_hex(&indices_to_prove, leaves_to_prove, leaves.len())?,
+    ///     root_hex
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn root_hex(
         &self,
         leaf_indices: &[usize],
@@ -228,7 +285,49 @@ impl<T: Hasher> MerkleProof<T> {
             .collect()
     }
 
-    /// Serializes proof hashes to a flat vector of bytes
+    /// Serializes proof hashes to a flat vector of bytes, from left to right, bottom to top.
+    /// Usually used to pass the proof to the client after extracting it from the tree.
+    ///
+    /// ## Important
+    ///
+    /// Please note that some applications may serialize proof differently, for example in reverse
+    /// order - from top to bottom, right to left. In that case, you'll need to do some
+    /// manipulations on the proof data manually. Raw proof hashes are available through
+    /// [`MerkleProof::proof_hashes`]
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+    /// # use std::convert::TryFrom;
+    /// #
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaf_values = ["a", "b", "c", "d", "e", "f"];
+    /// let leaves: Vec<[u8; 32]> = leaf_values
+    ///     .iter()
+    ///     .map(|x| Sha256::hash(x.as_bytes()))
+    ///     .collect();
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    /// let indices_to_prove = vec![3, 4];
+    /// let leaves_to_prove = leaves.get(3..5).ok_or("can't get leaves to prove")?;
+    /// let merkle_proof = merkle_tree.proof(&indices_to_prove);
+    /// let merkle_root = merkle_tree.root().ok_or("couldn't get the merkle root")?;
+    ///
+    /// // Serialize proof to pass it to the client over the network
+    /// let proof_bytes = merkle_proof.to_bytes();
+    ///
+    /// assert_eq!(proof_bytes, vec![
+    ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+    ///     2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198, 37, 47, 16, 200, 54, 16,
+    ///     235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228, 209, 215, 188, 250,
+    ///     137, 215, 36, 138, 130, 217, 241, 17, 229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79,
+    ///     34, 24, 15, 37, 173, 131, 101, 181, 63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99,
+    ///     249, 74,
+    /// ]);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn to_bytes(&self) -> Vec<u8> {
         let vectors: Vec<Vec<u8>> = self
             .proof_hashes()

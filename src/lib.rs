@@ -51,10 +51,9 @@
 //! // Parse proof back on the client
 //! let proof = MerkleProof::<Sha256>::try_from(proof_bytes)?;
 //!
-//! assert_eq!(proof.verify(merkle_root, &indices_to_prove, leaves_to_prove, leaves.len()), true);
+//! assert!(proof.verify(merkle_root, &indices_to_prove, leaves_to_prove, leaves.len()));
 //! # Ok(())
 //! # }
-//!
 //! ```
 //!
 //! Advanced usage with rolling several commits back:
