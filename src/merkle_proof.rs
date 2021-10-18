@@ -4,24 +4,45 @@ use crate::error::Error;
 use crate::partial_tree::PartialTree;
 use crate::{utils, Hasher};
 
-/// [`MerkleProof`] is used to parse, verify, calculate a root for merkle proofs.
+/// [`MerkleProof`] is used to parse, verify, calculate a root for Merkle proofs.
 ///
 /// ## Usage
 ///
 /// MerkleProof requires specifying hashing algorithm and hash size in order to work.
-/// Check out the `Hasher` trait for examples. rs_merkle provides some built in `Hasher`
-/// implementations, for example `rs_merkle::algorithms::Sha256`
+/// The hashing algorithm is set through the [`Hasher`] trait, which is supplied as a generic
+/// parameter to the [`MerkleProof`]. `rs_merkle` provides some built-in [`Hasher`] implementations,
+/// for example, [`algorithms::Sha256`]
 ///
 /// ## Examples
 ///
 /// ```
-/// use rs_merkle::{MerkleProof, algorithms::Sha256};
+/// # use rs_merkle::{MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils};
+/// # use std::convert::TryFrom;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let proof_hashes: Vec<[u8; 32]> = vec![
-///
+///     [
+///         46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147,
+///         162, 2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198
+///     ],
+///     [
+///         37, 47, 16, 200, 54, 16, 235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91,
+///         228, 209, 215, 188, 250, 137, 215, 36, 138, 130, 217, 241, 17
+///     ],
+///     [
+///         229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79, 34, 24, 15, 37, 173, 131, 101,
+///         181, 63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99, 249, 74
+///     ],
 /// ];
+/// let proof_hashes_copy = proof_hashes.clone();
 ///
-/// let proof = MerkleProof::<Sha256>::new(proof_hashes);
-///```
+/// let proof = MerkleProof::<Sha256>::new(proof_hashes_copy);
+/// assert_eq!(proof.proof_hashes(), &proof_hashes);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`Hasher`]: crate::Hasher
+/// [`algorithms::Sha256`]: crate::algorithms::Sha256
 pub struct MerkleProof<T: Hasher> {
     proof_hashes: Vec<T::Hash>,
 }
@@ -53,7 +74,7 @@ impl<T: Hasher> MerkleProof<T> {
     ///
     /// ## Errors
     ///
-    /// In case of parsing error result will contain [`Error`]
+    /// In case of a parsing error result will contain [`Error`]
     ///
     /// ['Error`]: crate::Error
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
@@ -100,7 +121,7 @@ impl<T: Hasher> MerkleProof<T> {
         }
     }
 
-    /// Calculates merkle root based on provided leaves and proof hashes. Used inside the
+    /// Calculates Merkle root based on provided leaves and proof hashes. Used inside the
     /// [`MerkleProof::verify`] method, but sometimes can be used on its own.
     ///
     /// ## Examples
