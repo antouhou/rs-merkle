@@ -2,7 +2,7 @@
 name = "rs_merkle"
 version = "0.2.2"
 authors = ["Anton Suprunchuk <anton.suprunchuk@gmail.com>"]
-description = "The most advanced Merkle Tree librray for Rust"
+description = "The most advanced Merkle Tree library for Rust. Supports creating and verifying proofs, multi-proofs, as well as advanced features, such as tree diffs, transactional changes, and rollbacks"
 edition = "2018"
 license = "Apache-2.0/MIT"
 repository = "https://github.com/antouhou/rs-merkle"

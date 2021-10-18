@@ -5,7 +5,13 @@ type PartialTreeLayer<H> = Vec<(usize, H)>;
 
 /// Partial tree represents a part of the original tree that is enough to calculate the root.
 /// Used in to extract the root in a merkle proof, to apply diff to a tree or to merge
-/// multiple trees into one
+/// multiple trees into one.
+///
+/// It is a rare case when you need to use this struct on it's own. It's mostly used inside
+/// [`MerkleTree`] and [`MerkleProof`]
+///
+/// [`MerkleTree`]: crate::MerkleTree
+/// [`MerkleProof`]: crate::MerkleProof
 #[derive(Clone)]
 pub struct PartialTree<T: Hasher> {
     layers: Vec<Vec<(usize, T::Hash)>>,

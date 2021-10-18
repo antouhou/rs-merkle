@@ -10,6 +10,9 @@ single and several elements, i.e. multi-proofs. Advanced features include making
 transactional changes to the tree and rolling back to any previously committed 
 tree state, similarly to Git.
 
+The library is highly customizable. Hashing function and the way how the tree 
+is built can be easily configured through a special trait.
+
 `rs-merkle` is
 [available on crates.io](https://crates.io/crates/rs_merkle), and 
 [API Documentation is available on docs.rs](https://docs.rs/rs_merkle/).
