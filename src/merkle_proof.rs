@@ -329,13 +329,13 @@ impl<T: Hasher> MerkleProof<T> {
     /// # }
     /// ```
     pub fn to_bytes(&self) -> Vec<u8> {
-        let vectors: Vec<Vec<u8>> = self
+        let mut vectors: Vec<Vec<u8>> = self
             .proof_hashes()
             .iter()
             .cloned()
             .map(|hash| hash.into())
             .collect();
-        vectors.iter().cloned().flatten().collect()
+        vectors.drain(..).flatten().collect()
     }
 }
 
