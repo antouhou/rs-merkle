@@ -50,6 +50,12 @@ impl<T: Hasher> MerkleProof<T> {
     ///
     /// let proof_result = MerkleProof::<Sha256>::from_bytes(proof_bytes.as_slice());
     /// ```
+    ///
+    /// ## Errors
+    ///
+    /// In case of parsing error result will contain [`Error`]
+    ///
+    /// ['Error`]: crate::Error
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         Self::try_from(bytes)
     }
