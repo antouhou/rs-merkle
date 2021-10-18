@@ -4,7 +4,7 @@ use crate::error::Error;
 use crate::partial_tree::PartialTree;
 use crate::{utils, Hasher};
 
-/// `MerkleProof` is used to parse, verify, calculate a root for merkle proofs.
+/// [`MerkleProof`] is used to parse, verify, calculate a root for merkle proofs.
 ///
 /// ## Usage
 ///
