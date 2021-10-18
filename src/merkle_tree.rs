@@ -4,12 +4,12 @@ use crate::{utils, Hasher, MerkleProof};
 
 /// [`MerkleTree`] is a Merkle Tree that is well suited for both basic and advanced usage.
 ///
-/// Basic features include creation and verification of merkle proofs from a set of leaves.
+/// Basic features include the creation and verification of Merkle proofs from a set of leaves.
 /// This is often done in various cryptocurrencies.
 ///
-/// Advanced features include being able to make transactional changes to a tree with
-/// being able to roll back to any previous committed state of tree. This scenario is similar
-/// to Git and can be found in databases and file systems.
+/// Advanced features include being able to make transactional changes to a tree with being able to
+/// roll back to any previously committed state of the tree. This scenario is similar to Git and
+/// can be found in databases and file systems.
 #[derive(Clone)]
 pub struct MerkleTree<T: Hasher> {
     current_working_tree: PartialTree<T>,
@@ -24,7 +24,7 @@ impl<T: Hasher> Default for MerkleTree<T> {
 }
 
 impl<T: Hasher> MerkleTree<T> {
-    /// Creates a new instance of Merkle Tree. Requires specifying the hash algorithm.
+    /// Creates a new instance of Merkle Tree. Requires a hash algorithm to be specified.
     ///
     /// # Examples
     ///
@@ -43,7 +43,7 @@ impl<T: Hasher> MerkleTree<T> {
         }
     }
 
-    /// Clones leave hashes and build the tree from them
+    /// Clones the leaves and builds the tree from them
     ///
     /// ## Examples
     ///
@@ -96,7 +96,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # }
     /// ```
     pub fn root(&self) -> Option<T::Hash> {
-        Some(self.layer_tuples().last()?.first()?.1)
+        Some(&self.layer_tuples().last()?.first()?.1)
     }
 
     /// Similar to [`MerkleTree::root`], but returns a hex encoded string instead of
@@ -130,7 +130,7 @@ impl<T: Hasher> MerkleTree<T> {
     }
 
     /// Returns helper nodes required to build a partial tree for the given indices
-    /// to be able to extract a root from it. Useful in constructing merkle proofs
+    /// to be able to extract a root from it. Useful in constructing Merkle proofs
     fn helper_nodes(&self, leaf_indices: &[usize]) -> Vec<T::Hash> {
         let mut helper_nodes = Vec::<T::Hash>::new();
 
@@ -168,7 +168,7 @@ impl<T: Hasher> MerkleTree<T> {
         helper_nodes
     }
 
-    /// Returns merkle proof required to prove inclusion of items in a data set.
+    /// Returns the Merkle proof required to prove the inclusion of items in a data set.
     ///
     /// ## Examples
     ///
@@ -319,7 +319,7 @@ impl<T: Hasher> MerkleTree<T> {
         }
     }
 
-    /// Rolls back one commit and reverts tree to the previous state.
+    /// Rolls back one commit and reverts the tree to the previous state.
     /// Removes the most recent commit from the history.
     ///
     /// ## Examples
@@ -410,7 +410,7 @@ impl<T: Hasher> MerkleTree<T> {
         Some(utils::collections::to_hex_string(&root))
     }
 
-    /// Aborts all uncommitted [`MerkleTree::insert`] and [`MerkleTree::append`]
+    /// Clears all uncommitted changes made by [`MerkleTree::insert`] and [`MerkleTree::append`]
     /// operations without applying them to the tree.
     ///
     /// ## Examples
