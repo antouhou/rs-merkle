@@ -96,7 +96,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # }
     /// ```
     pub fn root(&self) -> Option<T::Hash> {
-        Some(&self.layer_tuples().last()?.first()?.1)
+        Some(self.layer_tuples().last()?.first()?.1)
     }
 
     /// Similar to [`MerkleTree::root`], but returns a hex encoded string instead of
