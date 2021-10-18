@@ -511,7 +511,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # }
     /// ```
     pub fn leaves_len(&self) -> usize {
-        if let Some(leaves) = self.layer_tuples().first() {
+        if let Some(leaves) = self.leaves_tuples() {
             return leaves.len();
         }
 
@@ -530,19 +530,6 @@ impl<T: Hasher> MerkleTree<T> {
 
     fn layer_tuples(&self) -> &[Vec<(usize, T::Hash)>] {
         self.current_working_tree.layers()
-    }
-
-    /// Same as [`MerkleTree::layers`], but serializes each hash as a hex string
-    fn layers_hex(&self) -> Vec<Vec<String>> {
-        self.layer_tuples()
-            .iter()
-            .map(|layer| {
-                layer
-                    .iter()
-                    .map(|(_, hash)| utils::collections::to_hex_string(hash))
-                    .collect()
-            })
-            .collect()
     }
 
     /// Creates a diff from a changes that weren't committed to the main tree yet. Can be used
