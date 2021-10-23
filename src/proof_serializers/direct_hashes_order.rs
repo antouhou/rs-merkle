@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 use crate::{Hasher, MerkleProof, Error};
-use crate::merkle_proof_serializer::MerkleProofSerializer;
+use crate::proof_serializers::merkle_proof_serializer::MerkleProofSerializer;
 
 /// Serializes proof data to bytes with a direct hash order - hashes are concatenated from
 /// left to right, bottom to top.

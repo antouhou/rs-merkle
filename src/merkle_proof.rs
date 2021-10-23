@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use crate::error::Error;
 use crate::partial_tree::PartialTree;
 use crate::{utils, Hasher};
-use crate::merkle_proof_serializer::MerkleProofSerializer;
+use crate::proof_serializers::MerkleProofSerializer;
 use crate::proof_serializers::DirectHashesOrder;
 
 /// [`MerkleProof`] is used to parse, verify, calculate a root for Merkle proofs.

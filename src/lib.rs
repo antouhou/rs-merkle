@@ -133,12 +133,11 @@ pub use hasher::Hasher;
 pub use merkle_proof::MerkleProof;
 pub use merkle_tree::MerkleTree;
 pub use partial_tree::PartialTree;
-pub use merkle_proof_serializer::MerkleProofSerializer;
+pub use proof_serializers::MerkleProofSerializer;
 
 mod error;
 mod hasher;
 mod merkle_proof;
-mod merkle_proof_serializer;
 mod merkle_tree;
 mod partial_tree;
 #[doc(hidden)]
