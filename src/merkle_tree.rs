@@ -1,6 +1,4 @@
-use crate::partial_tree::PartialTree;
-use crate::utils::indices;
-use crate::{utils, Hasher, MerkleProof};
+use crate::{partial_tree::PartialTree, utils, utils::indices, Hasher, MerkleProof};
 
 /// [`MerkleTree`] is a Merkle Tree that is well suited for both basic and advanced usage.
 ///

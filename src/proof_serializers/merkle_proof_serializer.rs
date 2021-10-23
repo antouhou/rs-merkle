@@ -1,4 +1,4 @@
-use crate::{Hasher, MerkleProof, Error};
+use crate::{Error, Hasher, MerkleProof};
 
 /// Trait representing a Merkle proof serializer. Used in [`MerkleProof::serialize`] and
 /// [`MerkleProof::deserialize`].

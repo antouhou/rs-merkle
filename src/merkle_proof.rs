@@ -1,10 +1,10 @@
+use crate::{
+    error::Error,
+    partial_tree::PartialTree,
+    proof_serializers::{DirectHashesOrder, MerkleProofSerializer},
+    utils, Hasher,
+};
 use std::convert::TryFrom;
-
-use crate::error::Error;
-use crate::partial_tree::PartialTree;
-use crate::{utils, Hasher};
-use crate::proof_serializers::MerkleProofSerializer;
-use crate::proof_serializers::DirectHashesOrder;
 
 /// [`MerkleProof`] is used to parse, verify, calculate a root for Merkle proofs.
 ///
