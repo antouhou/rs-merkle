@@ -3,6 +3,8 @@ use std::convert::TryFrom;
 use crate::error::Error;
 use crate::partial_tree::PartialTree;
 use crate::{utils, Hasher};
+use crate::merkle_proof_serializer::MerkleProofSerializer;
+use crate::proof_serializers::DirectHashesOrder;
 
 /// [`MerkleProof`] is used to parse, verify, calculate a root for Merkle proofs.
 ///
@@ -52,7 +54,8 @@ impl<T: Hasher> MerkleProof<T> {
         MerkleProof { proof_hashes }
     }
 
-    /// Creates a proof from a slice of bytes
+    /// Creates a proof from a slice of bytes, direct hashes order. If you're looking for
+    /// other options of bytes to proof deserialization, take a look at [`MerkleProof::deserialize`]
     ///
     /// ## Examples
     ///
@@ -78,7 +81,51 @@ impl<T: Hasher> MerkleProof<T> {
     ///
     /// ['Error`]: crate::Error
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        Self::try_from(bytes)
+        Self::deserialize::<DirectHashesOrder>(bytes)
+    }
+
+    /// Creates a proof from a slice of bytes. Bytes can be serialized in different ways, so this
+    /// method requires specifying a serializer. You can take a look at built-in serializers at
+    /// [`crate::proof_serializers`]. If the serializer you're looking for is not there, it is
+    /// easy to make your own - take a look at the [`MerkleProofSerializer`] trait.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use std::convert::TryFrom;
+    /// # use rs_merkle::{MerkleProof, algorithms::Sha256, proof_serializers};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let proof_bytes: Vec<u8> = vec![
+    ///     229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79, 34, 24, 15, 37, 173, 131, 101, 181,
+    ///     63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99, 249, 74,
+    ///     37, 47, 16, 200, 54, 16, 235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228,
+    ///     209, 215, 188, 250, 137, 215, 36, 138, 130, 217, 241, 17,
+    ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+    ///     2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198,
+    /// ];
+    ///
+    /// let proof: MerkleProof<Sha256> = MerkleProof
+    ///     ::deserialize::<proof_serializers::ReverseHashesOrder>(proof_bytes.as_slice())?;
+    ///
+    /// assert_eq!(proof.serialize::<proof_serializers::DirectHashesOrder>(), &[
+    ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+    ///     2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198,
+    ///     37, 47, 16, 200, 54, 16, 235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228,
+    ///     209, 215, 188, 250, 137, 215, 36, 138, 130, 217, 241, 17,
+    ///     229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79, 34, 24, 15, 37, 173, 131, 101, 181,
+    ///     63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99, 249, 74,
+    /// ]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## Errors
+    ///
+    /// In case of a parsing error result will contain [`Error`]
+    ///
+    /// ['Error`]: crate::Error
+    pub fn deserialize<S: MerkleProofSerializer>(bytes: &[u8]) -> Result<Self, Error> {
+        S::deserialize(bytes)
     }
 
     /// Uses proof to verify that a given set of elements is contained in the original data
@@ -318,9 +365,9 @@ impl<T: Hasher> MerkleProof<T> {
     /// ## Important
     ///
     /// Please note that some applications may serialize proof differently, for example in reverse
-    /// order - from top to bottom, right to left. In that case, you'll need to do some
-    /// manipulations on the proof data manually. Raw proof hashes are available through
-    /// [`MerkleProof::proof_hashes`]
+    /// order - from top to bottom, right to left. In that case, you'll need to use another method -
+    /// [`MerkleProof::serialize`] with a custom serializer. Please consult
+    /// [`MerkleProof::serialize`] for more details.
     ///
     /// ## Examples
     ///
@@ -356,13 +403,51 @@ impl<T: Hasher> MerkleProof<T> {
     /// # }
     /// ```
     pub fn to_bytes(&self) -> Vec<u8> {
-        let mut vectors: Vec<Vec<u8>> = self
-            .proof_hashes()
-            .iter()
-            .cloned()
-            .map(|hash| hash.into())
-            .collect();
-        vectors.drain(..).flatten().collect()
+        self.serialize::<DirectHashesOrder>()
+    }
+
+    /// Serializes proof hashes to a flat vector of bytes using a custom proof serializer.
+    /// The library includes some built-in proof serializers, check [`crate::proof_serializers`]
+    /// module to see what's available out of the box. If none fit your needs, you can easily
+    /// implement your own - check the [`MerkleProofSerializer`] trait for more details.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use rs_merkle::{
+    /// #   MerkleTree, MerkleProof, algorithms::Sha256, Hasher, Error, utils, proof_serializers
+    /// # };
+    /// # use std::convert::TryFrom;
+    /// #
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let leaf_values = ["a", "b", "c", "d", "e", "f"];
+    /// let leaves: Vec<[u8; 32]> = leaf_values
+    ///     .iter()
+    ///     .map(|x| Sha256::hash(x.as_bytes()))
+    ///     .collect();
+    ///
+    /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+    /// let indices_to_prove = vec![3, 4];
+    /// let leaves_to_prove = leaves.get(3..5).ok_or("can't get leaves to prove")?;
+    /// let merkle_proof = merkle_tree.proof(&indices_to_prove);
+    /// let merkle_root = merkle_tree.root().ok_or("couldn't get the merkle root")?;
+    ///
+    /// // Serialize proof to pass it to the client over the network
+    /// let proof_bytes = merkle_proof.serialize::<proof_serializers::ReverseHashesOrder>();
+    ///
+    /// assert_eq!(proof_bytes, vec![
+    ///     229, 160, 31, 238, 20, 224, 237, 92, 72, 113, 79, 34, 24, 15, 37, 173, 131, 101, 181,
+    ///     63, 151, 121, 247, 157, 196, 163, 215, 233, 57, 99, 249, 74,
+    ///     37, 47, 16, 200, 54, 16, 235, 202, 26, 5, 156, 11, 174, 130, 85, 235, 162, 249, 91, 228,
+    ///     209, 215, 188, 250, 137, 215, 36, 138, 130, 217, 241, 17,
+    ///     46, 125, 44, 3, 169, 80, 122, 226, 101, 236, 245, 181, 53, 104, 133, 165, 51, 147, 162,
+    ///     2, 157, 36, 19, 148, 153, 114, 101, 161, 162, 90, 239, 198,
+    /// ]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn serialize<S: MerkleProofSerializer>(&self) -> Vec<u8> {
+        S::serialize(self)
     }
 }
 
@@ -416,29 +501,6 @@ impl<T: Hasher> TryFrom<&[u8]> for MerkleProof<T> {
     /// let proof_result = MerkleProof::<Sha256>::try_from(proof_bytes.as_slice());
     /// ```
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let hash_size = T::hash_size();
-
-        if bytes.len() % hash_size != 0 {
-            return Err(Error::wrong_proof_size(bytes.len(), hash_size));
-        }
-
-        let hashes_count = bytes.len() / hash_size;
-        let mut proof_hashes_slices = Vec::<T::Hash>::with_capacity(hashes_count);
-
-        for i in 0..hashes_count {
-            let slice_start = i * hash_size;
-            let slice_end = (i + 1) * hash_size;
-            let slice = bytes
-                .get(slice_start..slice_end)
-                .ok_or_else(Error::vec_to_hash_conversion_error)?;
-            let vec =
-                Vec::<u8>::try_from(slice).map_err(|_| Error::vec_to_hash_conversion_error())?;
-            match T::Hash::try_from(vec) {
-                Ok(val) => proof_hashes_slices.push(val),
-                Err(_) => return Err(Error::vec_to_hash_conversion_error()),
-            }
-        }
-
-        Ok(Self::new(proof_hashes_slices))
+        DirectHashesOrder::deserialize(bytes)
     }
 }
