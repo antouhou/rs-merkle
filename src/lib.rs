@@ -133,6 +133,7 @@ pub use hasher::Hasher;
 pub use merkle_proof::MerkleProof;
 pub use merkle_tree::MerkleTree;
 pub use partial_tree::PartialTree;
+pub use proof_serializers::MerkleProofSerializer;
 
 mod error;
 mod hasher;
@@ -143,3 +144,4 @@ mod partial_tree;
 pub mod utils;
 
 pub mod algorithms;
+pub mod proof_serializers;

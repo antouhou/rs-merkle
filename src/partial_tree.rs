@@ -1,5 +1,4 @@
-use crate::error::Error;
-use crate::{utils, Hasher};
+use crate::{error::Error, utils, Hasher};
 
 type PartialTreeLayer<H> = Vec<(usize, H)>;
 
