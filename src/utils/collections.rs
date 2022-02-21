@@ -1,3 +1,5 @@
+use crate::prelude::*;
+
 fn byte_to_hex(byte: &u8) -> String {
     format!("{:02x}", byte)
 }
