@@ -31,23 +31,12 @@ pub fn parent_indices(indices: &[usize]) -> Vec<usize> {
     parents
 }
 
-#[cfg(not(feature = "std"))]
-pub fn tree_depth(leaves_count: usize) -> usize {
-    if leaves_count == 0 {
-        0
-    } else if leaves_count == 1 {
-        1
-    } else {
-        fast_math::log2(leaves_count as f32) as usize + 1
-    }
-}
-
-#[cfg(feature = "std")]
 pub fn tree_depth(leaves_count: usize) -> usize {
     if leaves_count == 1 {
         1
     } else {
-        (leaves_count as f64).log2().ceil() as usize
+        let val = micromath::F32(leaves_count as f32);
+        val.log2().ceil().0 as usize
     }
 }
 
