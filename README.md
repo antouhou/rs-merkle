@@ -37,7 +37,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rs_merkle = "1.0"
+rs_merkle = "1.1"
 ```
 
 ## Documentation
