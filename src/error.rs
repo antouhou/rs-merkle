@@ -1,4 +1,5 @@
-use std::fmt::{Debug, Display, Formatter};
+use crate::prelude::*;
+use core::fmt::{Debug, Display, Formatter};
 
 /// A list specifying general categories of tree traversals/parsing errors.
 ///
@@ -89,10 +90,11 @@ impl Error {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for Error {}
 
 impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.message)
     }
 }

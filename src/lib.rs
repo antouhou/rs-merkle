@@ -126,6 +126,12 @@
 //! # Ok(())
 //! # }
 //! ```
+#![no_std]
+
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 pub use error::Error;
 pub use error::ErrorKind;
@@ -140,6 +146,7 @@ mod hasher;
 mod merkle_proof;
 mod merkle_tree;
 mod partial_tree;
+mod prelude;
 #[doc(hidden)]
 pub mod utils;
 

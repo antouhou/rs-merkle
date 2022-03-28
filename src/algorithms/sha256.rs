@@ -1,4 +1,4 @@
-use crate::Hasher;
+use crate::{prelude::*, Hasher};
 use sha2::{digest::FixedOutput, Digest, Sha256};
 
 /// Sha256 implementation of the [`Hasher`] trait.

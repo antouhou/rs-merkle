@@ -1,5 +1,6 @@
-use std::convert::TryFrom;
-use std::mem;
+use crate::prelude::*;
+use core::convert::TryFrom;
+use core::mem;
 
 /// Hasher is a trait used to provide a hashing algorithm for the library.
 ///

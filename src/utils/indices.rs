@@ -1,5 +1,5 @@
-use crate::utils;
-use std::collections::HashMap;
+use crate::{prelude::*, utils};
+use alloc::collections::BTreeMap;
 
 pub fn is_left_index(index: usize) -> bool {
     index % 2 == 0
@@ -35,15 +35,16 @@ pub fn tree_depth(leaves_count: usize) -> usize {
     if leaves_count == 1 {
         1
     } else {
-        (leaves_count as f64).log2().ceil() as usize
+        let val = micromath::F32(leaves_count as f32);
+        val.log2().ceil().0 as usize
     }
 }
 
-pub fn uneven_layers(tree_leaves_count: usize) -> HashMap<usize, usize> {
+pub fn uneven_layers(tree_leaves_count: usize) -> BTreeMap<usize, usize> {
     let mut leaves_count = tree_leaves_count;
     let depth = tree_depth(tree_leaves_count);
 
-    let mut uneven_layers = HashMap::new();
+    let mut uneven_layers = BTreeMap::new();
 
     for index in 0..depth {
         let uneven_layer = leaves_count % 2 != 0;
