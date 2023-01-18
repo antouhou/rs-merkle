@@ -35,8 +35,13 @@ pub fn tree_depth(leaves_count: usize) -> usize {
     if leaves_count == 1 {
         1
     } else {
-        let val = micromath::F32(leaves_count as f32);
-        val.log2().ceil().0 as usize
+        let mut current: usize = leaves_count;
+        let mut level = 0;
+        while current > 0 {
+            level = level + 1;
+            current = current >> 2;
+        }
+        level
     }
 }
 
