@@ -32,17 +32,13 @@ pub fn parent_indices(indices: &[usize]) -> Vec<usize> {
 }
 
 pub fn tree_depth(leaves_count: usize) -> usize {
-    if leaves_count == 1 {
-        1
-    } else {
-        let mut current: usize = leaves_count;
-        let mut level = 0;
-        while current > 0 {
-            level = level + 1;
-            current = current >> 2;
-        }
-        level
+    let mut current: usize = leaves_count;
+    let mut level = 0;
+    while current > 0 {
+        level = level + 1;
+        current = current >> 1;
     }
+    level
 }
 
 pub fn uneven_layers(tree_leaves_count: usize) -> BTreeMap<usize, usize> {
