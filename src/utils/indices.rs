@@ -32,12 +32,7 @@ pub fn parent_indices(indices: &[usize]) -> Vec<usize> {
 }
 
 pub fn tree_depth(leaves_count: usize) -> usize {
-    if leaves_count == 1 {
-        1
-    } else {
-        let val = micromath::F32(leaves_count as f32);
-        val.log2().ceil().0 as usize
-    }
+    8 * core::mem::size_of::<usize>() - leaves_count.leading_zeros() as usize
 }
 
 pub fn uneven_layers(tree_leaves_count: usize) -> BTreeMap<usize, usize> {
