@@ -19,6 +19,18 @@ jobs:
         override: true
     - name: Run tests
       run: cargo test
+  no_std_build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Build without std
+        run: cargo build --no-default-features
   lint:
     runs-on: ubuntu-latest
     steps:
