@@ -2,14 +2,25 @@ mod common;
 
 pub mod root {
     use crate::common;
-    use rs_merkle::{algorithms::Sha256, MerkleTree};
+    use rs_merkle::{
+        algorithms::{Sha256, Sha384},
+        MerkleTree,
+    };
 
     #[test]
     pub fn should_return_a_correct_root() {
         let test_data = common::setup();
-
         let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
+        assert_eq!(
+            merkle_tree.root_hex(),
+            Some(test_data.expected_root_hex.to_string())
+        );
+    }
 
+    #[test]
+    pub fn should_return_a_correct_root_sha384() {
+        let test_data = common::setup_sha384();
+        let merkle_tree = MerkleTree::<Sha384>::from_leaves(&test_data.leaf_hashes);
         assert_eq!(
             merkle_tree.root_hex(),
             Some(test_data.expected_root_hex.to_string())

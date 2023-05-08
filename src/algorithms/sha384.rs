@@ -5,7 +5,6 @@
 use crate::{prelude::*, Hasher};
 use sha2::{digest::FixedOutput, Digest, Sha384};
 
-
 /// Sha384 implementation of the [`Hasher`] trait.
 ///
 /// # Examples

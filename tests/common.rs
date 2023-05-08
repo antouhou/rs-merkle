@@ -1,10 +1,19 @@
 use rayon::prelude::*;
-use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
+use rs_merkle::{
+    algorithms::{Sha256, Sha384},
+    Hasher, MerkleTree,
+};
 
 pub struct TestData {
     pub leaf_values: Vec<String>,
     pub expected_root_hex: String,
     pub leaf_hashes: Vec<[u8; 32]>,
+}
+
+pub struct TestData48 {
+    pub leaf_values: Vec<String>,
+    pub expected_root_hex: String,
+    pub leaf_hashes: Vec<[u8; 48]>,
 }
 
 fn combine<T: Clone>(active: Vec<T>, rest: Vec<T>, mut combinations: Vec<Vec<T>>) -> Vec<Vec<T>> {
@@ -40,8 +49,21 @@ pub fn setup() -> TestData {
         .iter()
         .map(|x| Sha256::hash(x.as_bytes()))
         .collect();
-
     TestData {
+        leaf_values: leaf_values.iter().cloned().map(String::from).collect(),
+        leaf_hashes,
+        expected_root_hex: String::from(expected_root_hex),
+    }
+}
+
+pub fn setup_sha384() -> TestData48 {
+    let leaf_values = ["a", "b", "c", "d", "e", "f"];
+    let expected_root_hex = "19090f8e9527d4baaddbc1b9bb1142d96ef337537cfdb4aa176a709036be05fca58412b65c630d757288aaa7d54a57ad";
+    let leaf_hashes = leaf_values
+        .iter()
+        .map(|x| Sha384::hash(x.as_bytes()))
+        .collect();
+    TestData48 {
         leaf_values: leaf_values.iter().cloned().map(String::from).collect(),
         leaf_hashes,
         expected_root_hex: String::from(expected_root_hex),
