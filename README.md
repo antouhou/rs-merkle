@@ -37,7 +37,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rs_merkle = "1.3"
+rs_merkle = "1.4"
 ```
 
 This crate also can be used on the no-std targets. To use as a dependency 
@@ -45,7 +45,7 @@ in a project that requires no-std, disable default features:
 
 ```toml
 [dependencies]
-rs_merkle = { version = "1.3", default-features = false }
+rs_merkle = { version = "1.4", default-features = false }
 ```
 
 ## Documentation

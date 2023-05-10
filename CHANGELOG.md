@@ -1,3 +1,11 @@
+# [1.4.0](https://github.com/antouhou/rs-merkle/compare/v1.3.0...v1.4.0) (2023-05-10)
+
+
+### Features
+
+* add support for Sha384 hashes ([#27](https://github.com/antouhou/rs-merkle/pull/27)) ([3388777](https://github.com/antouhou/rs-merkle/commit/3388777a3f4cc7894df1049a7c95bc873de24c35)) (Thanks to @imotai)
+
+
 # [1.3.0](https://github.com/antouhou/rs-merkle/compare/v1.2.0...v1.3.0) (2023-03-14)
 
 
