@@ -61,10 +61,8 @@ impl<T: Hasher> MerkleTree<T> {
     /// # }
     pub fn from_leaves(leaves: &[T::Hash]) -> Self {
         let mut tree = Self::new();
-
         tree.append(leaves.to_vec().as_mut());
         tree.commit();
-
         tree
     }
 
