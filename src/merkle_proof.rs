@@ -228,7 +228,11 @@ impl<T: Hasher> MerkleProof<T> {
         // The next lines copy hashes from proof hashes and group them by layer index
         let mut proof_layers: Vec<Vec<(usize, T::Hash)>> = Vec::with_capacity(tree_depth + 1);
         let mut proof_copy = self.proof_hashes.clone();
+
         for proof_indices in proof_indices_by_layers {
+            if proof_copy.len() < proof_indices.len() {
+                return Err(Error::not_enough_hashes_to_calculate_root());
+            }
             let proof_hashes = proof_copy.splice(0..proof_indices.len(), []);
             proof_layers.push(proof_indices.iter().cloned().zip(proof_hashes).collect());
         }
