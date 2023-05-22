@@ -1,3 +1,11 @@
+# [1.4.1](https://github.com/antouhou/rs-merkle/compare/v1.4.0...v1.4.1) (2023-05-22)
+
+
+### Fixes
+
+* incorrect proof hash count causing panic ([#28](https://github.com/antouhou/rs-merkle/pull/28)) ([0a9acbc](https://github.com/antouhou/rs-merkle/commit/0a9acbc4d92453372764ca983175bae01a7efb35)) (Thanks to @witter-deland)
+
+
 # [1.4.0](https://github.com/antouhou/rs-merkle/compare/v1.3.0...v1.4.0) (2023-05-10)
 
 
