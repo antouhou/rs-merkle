@@ -3,7 +3,9 @@ mod common;
 pub mod root {
     use crate::common;
     use rayon::prelude::*;
-    use rs_merkle::{algorithms::Sha256, Error, Hasher, MerkleTree};
+    use rs_merkle::{
+        algorithms::Sha256, proof_serializers::DirectHashesOrder, Error, MerkleProof, MerkleTree,
+    };
     use std::time::Instant;
 
     #[test]
@@ -85,20 +87,26 @@ pub mod root {
     pub fn should_return_error_not_enough_hashes_to_calculate_root() {
         let test_data = common::setup();
         let leaf_hashes = &test_data.leaf_hashes;
-        let expected_root = test_data.expected_root_hex.clone();
         let indices_to_prove = vec![3, 4];
 
         let leaves_to_prove: Vec<[u8; 32]> = indices_to_prove
             .iter()
-            .map(|i| leaf_hashes.get(*i).unwrap().clone())
+            .map(|i| *leaf_hashes.get(*i).unwrap())
             .collect();
 
         let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
         let proof = merkle_tree.proof(&indices_to_prove);
-        let extracted_root = proof.root(
+
+        // remove the last hash from the proof
+        let proof_bytes = proof.serialize::<DirectHashesOrder>();
+        let proof_bytes = &proof_bytes[..proof_bytes.len() - 32];
+        let new_proof: MerkleProof<Sha256> =
+            MerkleProof::deserialize::<DirectHashesOrder>(proof_bytes).unwrap();
+
+        let extracted_root = new_proof.root(
             &indices_to_prove,
             &leaves_to_prove,
-            test_data.leaf_values.len() + 1,
+            test_data.leaf_values.len(),
         );
 
         assert_eq!(
