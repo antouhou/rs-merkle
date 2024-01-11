@@ -27,7 +27,7 @@ fn combine<T: Clone>(active: Vec<T>, rest: Vec<T>, mut combinations: Vec<Vec<T>>
     } else {
         let mut next = active.clone();
 
-        if let Some(first) = rest.get(0) {
+        if let Some(first) = rest.first() {
             next.push(first.clone());
         }
 
@@ -123,8 +123,7 @@ pub fn setup_proof_test_cases() -> Vec<ProofTestCases> {
                 .collect();
             let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
 
-            let case = ProofTestCases { merkle_tree, cases };
-            case
+            ProofTestCases { merkle_tree, cases }
         })
         .collect()
 }

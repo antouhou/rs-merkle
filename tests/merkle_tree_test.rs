@@ -67,7 +67,7 @@ pub mod proof {
 
 pub mod commit {
     use crate::common;
-    use rs_merkle::{algorithms::Sha256, Error, Hasher, MerkleTree};
+    use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 
     #[test]
     pub fn should_give_correct_root_after_commit() {
@@ -78,7 +78,7 @@ pub mod commit {
 
         // Passing empty vec to create an empty tree
         let mut merkle_tree = MerkleTree::<Sha256>::from_leaves(&vec);
-        let merkle_tree2 = MerkleTree::<Sha256>::from_leaves(&leaf_hashes);
+        let merkle_tree2 = MerkleTree::<Sha256>::from_leaves(leaf_hashes);
         // Adding leaves
         merkle_tree.append(leaf_hashes.clone().as_mut());
         let root = merkle_tree.uncommitted_root_hex();
@@ -197,7 +197,7 @@ pub mod commit {
 }
 
 pub mod rollback {
-    use crate::common;
+
     use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 
     #[test]

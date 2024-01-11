@@ -17,7 +17,7 @@ pub mod root {
 
         let leaves_to_prove: Vec<[u8; 32]> = indices_to_prove
             .iter()
-            .map(|i| leaf_hashes.get(*i).unwrap().clone())
+            .map(|i| *leaf_hashes.get(*i).unwrap())
             .collect();
 
         let merkle_tree = MerkleTree::<Sha256>::from_leaves(&test_data.leaf_hashes);
@@ -173,7 +173,7 @@ pub mod to_bytes {
 }
 
 pub mod from_bytes {
-    use crate::common;
+
     use rs_merkle::{algorithms::Sha256, Error, MerkleProof};
 
     #[test]
