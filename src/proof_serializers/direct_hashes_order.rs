@@ -32,8 +32,7 @@ impl MerkleProofSerializer for DirectHashesOrder {
             let slice = bytes
                 .get(slice_start..slice_end)
                 .ok_or_else(Error::vec_to_hash_conversion_error)?;
-            let vec =
-                Vec::<u8>::try_from(slice).map_err(|_| Error::vec_to_hash_conversion_error())?;
+            let vec = Vec::from(slice);
             match T::Hash::try_from(vec) {
                 Ok(val) => proof_hashes_slices.push(val),
                 Err(_) => return Err(Error::vec_to_hash_conversion_error()),
