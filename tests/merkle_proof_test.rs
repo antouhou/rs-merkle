@@ -173,7 +173,7 @@ pub mod to_bytes {
 }
 
 pub mod from_bytes {
-    use crate::common;
+    
     use rs_merkle::{algorithms::Sha256, Error, MerkleProof};
 
     #[test]

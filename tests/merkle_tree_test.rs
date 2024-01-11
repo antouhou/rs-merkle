@@ -67,7 +67,7 @@ pub mod proof {
 
 pub mod commit {
     use crate::common;
-    use rs_merkle::{algorithms::Sha256, Error, Hasher, MerkleTree};
+    use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 
     #[test]
     pub fn should_give_correct_root_after_commit() {
@@ -197,7 +197,7 @@ pub mod commit {
 }
 
 pub mod rollback {
-    use crate::common;
+    
     use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 
     #[test]
