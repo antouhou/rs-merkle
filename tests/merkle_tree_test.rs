@@ -197,7 +197,7 @@ pub mod commit {
 }
 
 pub mod rollback {
-    
+
     use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 
     #[test]

@@ -123,7 +123,6 @@ pub fn setup_proof_test_cases() -> Vec<ProofTestCases> {
                 .collect();
             let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
 
-            
             ProofTestCases { merkle_tree, cases }
         })
         .collect()
