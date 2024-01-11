@@ -1,6 +1,6 @@
 [package]
 name = "rs_merkle"
-version = "1.4.1"
+version = "1.4.2"
 authors = ["Anton Suprunchuk <anton.suprunchuk@gmail.com>"]
 description = "The most advanced Merkle Tree library for Rust. Supports creating and verifying proofs, multi-proofs, as well as advanced features, such as tree diffs, transactional changes, and rollbacks"
 edition = "2018"

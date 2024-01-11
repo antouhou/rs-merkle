@@ -1,3 +1,11 @@
+# [1.4.2](https://github.com/antouhou/rs-merkle/compare/v1.4.0...v1.4.1) (2024-01-11)
+
+
+### Fixes
+
+* sorting indexes in the proof verification, resulting in a false negative during verification in some cases ([#30](https://github.com/antouhou/rs-merkle/pull/30)) ([bc42846](https://github.com/antouhou/rs-merkle/commit/bc42846dc4cb185efc04aef173b3db10e8c54661)) (Thanks to @themighty1)
+
+
 # [1.4.1](https://github.com/antouhou/rs-merkle/compare/v1.4.0...v1.4.1) (2023-05-22)
 
 
