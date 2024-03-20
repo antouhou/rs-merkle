@@ -10,6 +10,7 @@ use crate::{partial_tree::PartialTree, utils, utils::indices, Hasher, MerkleProo
 /// roll back to any previously committed state of the tree. This scenario is similar to Git and
 /// can be found in databases and file systems.
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MerkleTree<T: Hasher> {
     current_working_tree: PartialTree<T>,
     history: Vec<PartialTree<T>>,

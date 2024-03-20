@@ -13,6 +13,7 @@ type PartialTreeLayer<H> = Vec<(usize, H)>;
 /// [`MerkleTree`]: crate::MerkleTree
 /// [`MerkleProof`]: crate::MerkleProof
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartialTree<T: Hasher> {
     layers: Vec<Vec<(usize, T::Hash)>>,
 }
