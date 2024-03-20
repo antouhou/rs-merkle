@@ -46,6 +46,7 @@ use core::convert::TryFrom;
 ///
 /// [`Hasher`]: crate::Hasher
 /// [`algorithms::Sha256`]: crate::algorithms::Sha256
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MerkleProof<T: Hasher> {
     proof_hashes: Vec<T::Hash>,
 }
