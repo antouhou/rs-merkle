@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::{convert::TryFrom, mem};
+use core::convert::TryFrom;
 
 /// This type is used as a hash type in the library.
 ///
@@ -14,9 +14,14 @@ use core::{convert::TryFrom, mem};
 /// `PartialEq` is required to compare equality when verifying proof
 /// `Into<Vec<u8>>` is required to be able to serialize proof
 /// `TryFrom<Vec<u8>>` is required to parse hashes from a serialized proof
-pub trait Hash: Copy + PartialEq + Into<Vec<u8>> + TryFrom<Vec<u8>> {}
+pub trait Hash: Copy + PartialEq + Into<Vec<u8>> + TryFrom<Vec<u8>> {
+    /// The size of the hash in bytes.
+    const SIZE: usize;
+}
 
-impl<T> Hash for T where T: Copy + PartialEq + Into<Vec<u8>> + TryFrom<Vec<u8>> {}
+impl<const N: usize> Hash for [u8; N] {
+    const SIZE: usize = N;
+}
 
 /// Hasher is a trait used to provide a hashing algorithm for the library.
 ///
@@ -71,12 +76,5 @@ pub trait Hasher: Clone {
             }
             None => *left,
         }
-    }
-
-    /// Returns the byte size of `Self::Hash`. Default implementation returns
-    /// `mem::size_of::<Self::Hash>()`. Usually doesn't need to be overridden.
-    /// Used internally by `MerkleProof` to parse hashes from a serialized proof.
-    fn hash_size() -> usize {
-        mem::size_of::<Self::Hash>()
     }
 }
