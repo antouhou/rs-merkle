@@ -1,5 +1,6 @@
 use crate::{
     error::Error,
+    hasher::Hash,
     partial_tree::PartialTree,
     prelude::*,
     proof_serializers::{DirectHashesOrder, MerkleProofSerializer},
@@ -46,12 +47,12 @@ use core::convert::TryFrom;
 ///
 /// [`Hasher`]: crate::Hasher
 /// [`algorithms::Sha256`]: crate::algorithms::Sha256
-pub struct MerkleProof<T: Hasher> {
-    proof_hashes: Vec<T::Hash>,
+pub struct MerkleProof<H> {
+    proof_hashes: Vec<H>,
 }
 
-impl<T: Hasher> MerkleProof<T> {
-    pub fn new(proof_hashes: Vec<T::Hash>) -> Self {
+impl<H: Hash> MerkleProof<H> {
+    pub fn new(proof_hashes: Vec<H>) -> Self {
         MerkleProof { proof_hashes }
     }
 
@@ -156,14 +157,18 @@ impl<T: Hasher> MerkleProof<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn verify(
+    pub fn verify<T>(
         &self,
-        root: T::Hash,
+        hasher: &T,
+        root: H,
         leaf_indices: &[usize],
-        leaf_hashes: &[T::Hash],
+        leaf_hashes: &[H],
         total_leaves_count: usize,
-    ) -> bool {
-        match self.root(leaf_indices, leaf_hashes, total_leaves_count) {
+    ) -> bool
+    where
+        T: Hasher<Hash = H>,
+    {
+        match self.root(hasher, leaf_indices, leaf_hashes, total_leaves_count) {
             Ok(extracted_root) => extracted_root == root,
             Err(_) => false,
         }
@@ -199,12 +204,16 @@ impl<T: Hasher> MerkleProof<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn root(
+    pub fn root<T>(
         &self,
+        hasher: &T,
         leaf_indices: &[usize],
-        leaf_hashes: &[T::Hash],
+        leaf_hashes: &[H],
         total_leaves_count: usize,
-    ) -> Result<T::Hash, Error> {
+    ) -> Result<H, Error>
+    where
+        T: Hasher<Hash = H>,
+    {
         if leaf_indices.len() != leaf_hashes.len() {
             return Err(Error::leaves_indices_count_mismatch(
                 leaf_indices.len(),
@@ -214,7 +223,7 @@ impl<T: Hasher> MerkleProof<T> {
         let tree_depth = utils::indices::tree_depth(total_leaves_count);
 
         // Zipping indices and hashes into a vector of (original_index_in_tree, leaf_hash)
-        let mut leaf_tuples: Vec<(usize, T::Hash)> = leaf_indices
+        let mut leaf_tuples: Vec<(usize, H)> = leaf_indices
             .iter()
             .cloned()
             .zip(leaf_hashes.iter().cloned())
@@ -228,7 +237,7 @@ impl<T: Hasher> MerkleProof<T> {
             utils::indices::proof_indices_by_layers(&sorted_indices, total_leaves_count);
 
         // The next lines copy hashes from proof hashes and group them by layer index
-        let mut proof_layers: Vec<Vec<(usize, T::Hash)>> = Vec::with_capacity(tree_depth + 1);
+        let mut proof_layers: Vec<Vec<(usize, H)>> = Vec::with_capacity(tree_depth + 1);
         let mut proof_copy = self.proof_hashes.clone();
 
         for proof_indices in proof_indices_by_layers {
@@ -247,7 +256,7 @@ impl<T: Hasher> MerkleProof<T> {
             None => proof_layers.push(leaf_tuples),
         }
 
-        let partial_tree = PartialTree::<T>::build(proof_layers, tree_depth)?;
+        let partial_tree = PartialTree::<H>::build(hasher, proof_layers, tree_depth)?;
 
         match partial_tree.root() {
             Some(root) => Ok(*root),
@@ -284,13 +293,17 @@ impl<T: Hasher> MerkleProof<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn root_hex(
+    pub fn root_hex<T>(
         &self,
+        hasher: &T,
         leaf_indices: &[usize],
-        leaf_hashes: &[T::Hash],
+        leaf_hashes: &[H],
         total_leaves_count: usize,
-    ) -> Result<String, Error> {
-        let root = self.root(leaf_indices, leaf_hashes, total_leaves_count)?;
+    ) -> Result<String, Error>
+    where
+        T: Hasher<Hash = H>,
+    {
+        let root = self.root(hasher, leaf_indices, leaf_hashes, total_leaves_count)?;
         Ok(utils::collections::to_hex_string(&root))
     }
 
@@ -324,7 +337,7 @@ impl<T: Hasher> MerkleProof<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn proof_hashes(&self) -> &[T::Hash] {
+    pub fn proof_hashes(&self) -> &[H] {
         &self.proof_hashes
     }
 
@@ -458,7 +471,7 @@ impl<T: Hasher> MerkleProof<T> {
     }
 }
 
-impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
+impl<H: Hash> TryFrom<Vec<u8>> for MerkleProof<H> {
     type Error = Error;
 
     /// Parses proof serialized to a collection of bytes. Consumes passed vector.
@@ -485,7 +498,7 @@ impl<T: Hasher> TryFrom<Vec<u8>> for MerkleProof<T> {
     }
 }
 
-impl<T: Hasher> TryFrom<&[u8]> for MerkleProof<T> {
+impl<H: Hash> TryFrom<&[u8]> for MerkleProof<H> {
     type Error = Error;
 
     /// Parses proof serialized to a collection of bytes

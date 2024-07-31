@@ -1,5 +1,10 @@
-use crate::prelude::*;
-use crate::{partial_tree::PartialTree, utils, utils::indices, Hasher, MerkleProof};
+use crate::{
+    hasher::Hash,
+    partial_tree::PartialTree,
+    prelude::*,
+    utils::{self, indices},
+    Hasher, MerkleProof,
+};
 
 /// [`MerkleTree`] is a Merkle Tree that is well suited for both basic and advanced usage.
 ///
@@ -10,19 +15,19 @@ use crate::{partial_tree::PartialTree, utils, utils::indices, Hasher, MerkleProo
 /// roll back to any previously committed state of the tree. This scenario is similar to Git and
 /// can be found in databases and file systems.
 #[derive(Clone)]
-pub struct MerkleTree<T: Hasher> {
-    current_working_tree: PartialTree<T>,
-    history: Vec<PartialTree<T>>,
-    uncommitted_leaves: Vec<T::Hash>,
+pub struct MerkleTree<H> {
+    current_working_tree: PartialTree<H>,
+    history: Vec<PartialTree<H>>,
+    uncommitted_leaves: Vec<H>,
 }
 
-impl<T: Hasher> Default for MerkleTree<T> {
+impl<H: Hash> Default for MerkleTree<H> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T: Hasher> MerkleTree<T> {
+impl<H: Hash> MerkleTree<H> {
     /// Creates a new instance of Merkle Tree. Requires a hash algorithm to be specified.
     ///
     /// # Examples
@@ -59,10 +64,13 @@ impl<T: Hasher> MerkleTree<T> {
     /// let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
     /// # Ok(())
     /// # }
-    pub fn from_leaves(leaves: &[T::Hash]) -> Self {
+    pub fn from_leaves<T>(hasher: &T, leaves: &[H]) -> Self
+    where
+        T: Hasher<Hash = H>,
+    {
         let mut tree = Self::new();
         tree.append(leaves.to_vec().as_mut());
-        tree.commit();
+        tree.commit(hasher);
         tree
     }
 
@@ -92,7 +100,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn root(&self) -> Option<T::Hash> {
+    pub fn root(&self) -> Option<H> {
         Some(self.layer_tuples().last()?.first()?.1)
     }
 
@@ -128,8 +136,8 @@ impl<T: Hasher> MerkleTree<T> {
 
     /// Returns helper nodes required to build a partial tree for the given indices
     /// to be able to extract a root from it. Useful in constructing Merkle proofs
-    fn helper_nodes(&self, leaf_indices: &[usize]) -> Vec<T::Hash> {
-        let mut helper_nodes = Vec::<T::Hash>::new();
+    fn helper_nodes(&self, leaf_indices: &[usize]) -> Vec<H> {
+        let mut helper_nodes = Vec::<H>::new();
 
         for layer in self.helper_node_tuples(leaf_indices) {
             for (_index, hash) in layer {
@@ -142,9 +150,9 @@ impl<T: Hasher> MerkleTree<T> {
 
     /// Gets all helper nodes required to build a partial merkle tree for the given indices,
     /// cloning all required hashes into the resulting vector.
-    fn helper_node_tuples(&self, leaf_indices: &[usize]) -> Vec<Vec<(usize, T::Hash)>> {
+    fn helper_node_tuples(&self, leaf_indices: &[usize]) -> Vec<Vec<(usize, H)>> {
         let mut current_layer_indices = leaf_indices.to_vec();
-        let mut helper_nodes: Vec<Vec<(usize, T::Hash)>> = Vec::new();
+        let mut helper_nodes: Vec<Vec<(usize, H)>> = Vec::new();
 
         for tree_layer in self.layer_tuples() {
             let mut helpers_layer = Vec::new();
@@ -193,8 +201,8 @@ impl<T: Hasher> MerkleTree<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn proof(&self, leaf_indices: &[usize]) -> MerkleProof<T> {
-        MerkleProof::<T>::new(self.helper_nodes(leaf_indices))
+    pub fn proof(&self, leaf_indices: &[usize]) -> MerkleProof<H> {
+        MerkleProof::<H>::new(self.helper_nodes(leaf_indices))
     }
 
     /// Inserts a new leaf. Please note it won't modify the root just yet; For the changes
@@ -242,7 +250,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn insert(&mut self, leaf: T::Hash) -> &mut Self {
+    pub fn insert(&mut self, leaf: H) -> &mut Self {
         self.uncommitted_leaves.push(leaf);
         self
     }
@@ -273,7 +281,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn append(&mut self, leaves: &mut Vec<T::Hash>) -> &mut Self {
+    pub fn append(&mut self, leaves: &mut Vec<H>) -> &mut Self {
         self.uncommitted_leaves.append(leaves);
         self
     }
@@ -308,8 +316,11 @@ impl<T: Hasher> MerkleTree<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn commit(&mut self) {
-        if let Some(diff) = self.uncommitted_diff() {
+    pub fn commit<T>(&mut self, hasher: &T)
+    where
+        T: Hasher<Hash = H>,
+    {
+        if let Some(diff) = self.uncommitted_diff(hasher) {
             self.history.push(diff.clone());
             self.current_working_tree.merge_unverified(diff);
             self.uncommitted_leaves.clear();
@@ -364,8 +375,11 @@ impl<T: Hasher> MerkleTree<T> {
     /// Will return the same hash as [`MerkleTree::root`] after [`MerkleTree::commit`]
     ///
     /// For examples, please check [`MerkleTree::uncommitted_root_hex`]
-    pub fn uncommitted_root(&self) -> Option<T::Hash> {
-        let shadow_tree = self.uncommitted_diff()?;
+    pub fn uncommitted_root<T>(&self, hasher: &T) -> Option<H>
+    where
+        T: Hasher<Hash = H>,
+    {
+        let shadow_tree = self.uncommitted_diff(hasher)?;
         shadow_tree.root().cloned()
     }
 
@@ -402,8 +416,11 @@ impl<T: Hasher> MerkleTree<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn uncommitted_root_hex(&self) -> Option<String> {
-        let root = self.uncommitted_root()?;
+    pub fn uncommitted_root_hex<T>(&self, hasher: &T) -> Option<String>
+    where
+        T: Hasher<Hash = H>,
+    {
+        let root = self.uncommitted_root(hasher)?;
         Some(utils::collections::to_hex_string(&root))
     }
 
@@ -484,7 +501,7 @@ impl<T: Hasher> MerkleTree<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn leaves(&self) -> Option<Vec<T::Hash>> {
+    pub fn leaves(&self) -> Option<Vec<H>> {
         Some(self.layers().first()?.to_vec())
     }
 
@@ -515,23 +532,26 @@ impl<T: Hasher> MerkleTree<T> {
         0
     }
 
-    fn leaves_tuples(&self) -> Option<&[(usize, T::Hash)]> {
+    fn leaves_tuples(&self) -> Option<&[(usize, H)]> {
         Some(self.layer_tuples().first()?.as_slice())
     }
 
     /// Returns the whole tree, where the first layer is leaves and
     /// consequent layers are nodes.
-    fn layers(&self) -> Vec<Vec<T::Hash>> {
+    fn layers(&self) -> Vec<Vec<H>> {
         self.current_working_tree.layer_nodes()
     }
 
-    fn layer_tuples(&self) -> &[Vec<(usize, T::Hash)>] {
+    fn layer_tuples(&self) -> &[Vec<(usize, H)>] {
         self.current_working_tree.layers()
     }
 
     /// Creates a diff from a changes that weren't committed to the main tree yet. Can be used
     /// to get uncommitted root or can be merged with the main tree
-    fn uncommitted_diff(&self) -> Option<PartialTree<T>> {
+    fn uncommitted_diff<T>(&self, hasher: &T) -> Option<PartialTree<H>>
+    where
+        T: Hasher<Hash = H>,
+    {
         if self.uncommitted_leaves.is_empty() {
             return None;
         }
@@ -546,7 +566,7 @@ impl<T: Hasher> MerkleTree<T> {
             .collect();
         // Tuples (index, hash) needed to construct a partial tree, since partial tree can't
         // maintain indices otherwise
-        let mut shadow_node_tuples: Vec<(usize, T::Hash)> = shadow_indices
+        let mut shadow_node_tuples: Vec<(usize, H)> = shadow_indices
             .iter()
             .cloned()
             .zip(self.uncommitted_leaves.iter().cloned())
@@ -566,6 +586,6 @@ impl<T: Hasher> MerkleTree<T> {
         }
 
         // Building a partial tree with the changes that would be needed to the working tree
-        PartialTree::<T>::build(partial_tree_tuples, uncommitted_tree_depth).ok()
+        PartialTree::<H>::build(hasher, partial_tree_tuples, uncommitted_tree_depth).ok()
     }
 }
