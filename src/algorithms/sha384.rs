@@ -32,13 +32,13 @@ use sha2::{digest::FixedOutput, Digest, Sha384};
 /// ```
 ///
 /// [`Hasher`]: crate::Hasher
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Sha384Algorithm {}
 
 impl Hasher for Sha384Algorithm {
     type Hash = [u8; 48];
 
-    fn hash(data: &[u8]) -> [u8; 48] {
+    fn hash(&self, data: &[u8]) -> [u8; 48] {
         let mut hasher = Sha384::new();
         hasher.update(data);
         <[u8; 48]>::from(hasher.finalize_fixed())

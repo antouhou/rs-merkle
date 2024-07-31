@@ -47,7 +47,7 @@ pub trait Hasher: Clone {
 
     /// This associated function takes a slice of bytes and returns a hash of it.
     /// Used by `concat_and_hash` function to build a tree from concatenated hashes
-    fn hash(data: &[u8]) -> Self::Hash;
+    fn hash(&self, data: &[u8]) -> Self::Hash;
 
     /// Used by [`MerkleTree`] and [`PartialTree`] when calculating the root.
     /// The provided default implementation propagates the left node if it doesn't
@@ -60,14 +60,14 @@ pub trait Hasher: Clone {
     ///
     /// [`MerkleTree`]: crate::MerkleTree
     /// [`PartialTree`]: crate::PartialTree
-    fn concat_and_hash(left: &Self::Hash, right: Option<&Self::Hash>) -> Self::Hash {
+    fn concat_and_hash(&self, left: &Self::Hash, right: Option<&Self::Hash>) -> Self::Hash {
         let mut concatenated: Vec<u8> = (*left).into();
 
         match right {
             Some(right_node) => {
                 let mut right_node_clone: Vec<u8> = (*right_node).into();
                 concatenated.append(&mut right_node_clone);
-                Self::hash(&concatenated)
+                self.hash(&concatenated)
             }
             None => *left,
         }
