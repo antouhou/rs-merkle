@@ -33,7 +33,7 @@ use sha2::{digest::FixedOutput, Digest, Sha384};
 ///
 /// [`Hasher`]: crate::Hasher
 #[derive(Default, Clone)]
-pub struct Sha384Algorithm {}
+pub struct Sha384Algorithm;
 
 impl Hasher for Sha384Algorithm {
     type Hash = [u8; 48];

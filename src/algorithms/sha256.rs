@@ -29,7 +29,7 @@ use sha2::{digest::FixedOutput, Digest, Sha256};
 ///
 /// [`Hasher`]: crate::Hasher
 #[derive(Default, Clone)]
-pub struct Sha256Algorithm {}
+pub struct Sha256Algorithm;
 
 impl Hasher for Sha256Algorithm {
     type Hash = [u8; 32];
