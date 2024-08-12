@@ -1,5 +1,4 @@
-use crate::prelude::*;
-use crate::{error::Error, utils, Hasher};
+use crate::{error::Error, hasher::Hash, prelude::*, utils, Hasher};
 
 type PartialTreeLayer<H> = Vec<(usize, H)>;
 
@@ -13,17 +12,17 @@ type PartialTreeLayer<H> = Vec<(usize, H)>;
 /// [`MerkleTree`]: crate::MerkleTree
 /// [`MerkleProof`]: crate::MerkleProof
 #[derive(Clone)]
-pub struct PartialTree<T: Hasher> {
-    layers: Vec<Vec<(usize, T::Hash)>>,
+pub struct PartialTree<H> {
+    layers: Vec<Vec<(usize, H)>>,
 }
 
-impl<T: Hasher> Default for PartialTree<T> {
+impl<H: Hash> Default for PartialTree<H> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T: Hasher> PartialTree<T> {
+impl<H: Hash> PartialTree<H> {
     /// Takes leaves (item hashes) as an argument and build a Merkle Tree from them.
     /// Since it's a partial tree, hashes must be accompanied by their index in the original tree.
     pub fn new() -> Self {
@@ -32,30 +31,47 @@ impl<T: Hasher> PartialTree<T> {
 
     /// This is a helper function to build a full tree from a full set of leaves without any
     /// helper indices
-    pub fn from_leaves(leaves: &[T::Hash]) -> Result<Self, Error> {
-        let leaf_tuples: Vec<(usize, T::Hash)> = leaves.iter().cloned().enumerate().collect();
+    pub fn from_leaves<T>(hasher: &T, leaves: &[H]) -> Result<Self, Error>
+    where
+        T: Hasher<Hash = H>,
+    {
+        let leaf_tuples: Vec<(usize, H)> = leaves.iter().cloned().enumerate().collect();
 
-        Self::build(vec![leaf_tuples], utils::indices::tree_depth(leaves.len()))
+        Self::build(
+            hasher,
+            vec![leaf_tuples],
+            utils::indices::tree_depth(leaves.len()),
+        )
     }
 
-    pub fn build(partial_layers: Vec<Vec<(usize, T::Hash)>>, depth: usize) -> Result<Self, Error> {
-        let layers = Self::build_tree(partial_layers, depth)?;
+    pub fn build<T>(
+        hasher: &T,
+        partial_layers: Vec<Vec<(usize, H)>>,
+        depth: usize,
+    ) -> Result<Self, Error>
+    where
+        T: Hasher<Hash = H>,
+    {
+        let layers = Self::build_tree(hasher, partial_layers, depth)?;
         Ok(Self { layers })
     }
 
     /// This is a general algorithm for building a partial tree. It can be used to extract root
     /// from merkle proof, or if a complete set of leaves provided as a first argument and no
     /// helper indices given, will construct the whole tree.
-    fn build_tree(
-        mut partial_layers: Vec<Vec<(usize, T::Hash)>>,
+    fn build_tree<T>(
+        hasher: &T,
+        mut partial_layers: Vec<Vec<(usize, H)>>,
         full_tree_depth: usize,
-    ) -> Result<Vec<PartialTreeLayer<T::Hash>>, Error> {
-        let mut partial_tree: Vec<Vec<(usize, T::Hash)>> = Vec::new();
+    ) -> Result<Vec<PartialTreeLayer<H>>, Error>
+    where
+        T: Hasher<Hash = H>,
+    {
+        let mut partial_tree: Vec<Vec<(usize, H)>> = Vec::new();
         let mut current_layer = Vec::new();
 
         // Reversing helper nodes, so we can remove one layer starting from 0 each iteration
-        let mut reversed_layers: Vec<Vec<(usize, T::Hash)>> =
-            partial_layers.drain(..).rev().collect();
+        let mut reversed_layers: Vec<Vec<(usize, H)>> = partial_layers.drain(..).rev().collect();
 
         // This iterates to full_tree_depth and not to the partial_layers_len because
         // when constructing
@@ -74,7 +90,7 @@ impl<T: Hasher> PartialTree<T> {
             partial_tree.push(current_layer.clone());
 
             // This empties `current` layer and prepares it to be reused for the next iteration
-            let (indices, nodes): (Vec<usize>, Vec<T::Hash>) = current_layer.drain(..).unzip();
+            let (indices, nodes): (Vec<usize>, Vec<H>) = current_layer.drain(..).unzip();
             let parent_layer_indices = utils::indices::parent_indices(&indices);
 
             for (i, parent_node_index) in parent_layer_indices.iter().enumerate() {
@@ -82,7 +98,7 @@ impl<T: Hasher> PartialTree<T> {
                     // Populate `current_layer` back for the next iteration
                     Some(left_node) => current_layer.push((
                         *parent_node_index,
-                        T::concat_and_hash(left_node, nodes.get(i * 2 + 1)),
+                        hasher.concat_and_hash(left_node, nodes.get(i * 2 + 1)),
                     )),
                     None => return Err(Error::not_enough_helper_nodes()),
                 }
@@ -100,7 +116,7 @@ impl<T: Hasher> PartialTree<T> {
     }
 
     /// Return the root of the tree
-    pub fn root(&self) -> Option<&T::Hash> {
+    pub fn root(&self) -> Option<&H> {
         Some(&self.layers.last()?.first()?.1)
     }
 
@@ -127,10 +143,10 @@ impl<T: Hasher> PartialTree<T> {
         };
 
         for layer_index in 0..combined_tree_size {
-            let mut combined_layer: Vec<(usize, T::Hash)> = Vec::new();
+            let mut combined_layer: Vec<(usize, H)> = Vec::new();
 
             if let Some(self_layer) = self.layers().get(layer_index) {
-                let mut filtered_layer: Vec<(usize, T::Hash)> = self_layer
+                let mut filtered_layer: Vec<(usize, H)> = self_layer
                     .iter()
                     .filter(|(node_index, _)| !other.contains(layer_index, *node_index))
                     .cloned()
@@ -150,7 +166,7 @@ impl<T: Hasher> PartialTree<T> {
     }
 
     /// Replace layer at a given index with a new layer. Used during tree merge
-    fn upsert_layer(&mut self, layer_index: usize, mut new_layer: Vec<(usize, T::Hash)>) {
+    fn upsert_layer(&mut self, layer_index: usize, mut new_layer: Vec<(usize, H)>) {
         match self.layers.get_mut(layer_index) {
             Some(layer) => {
                 layer.clear();
@@ -160,8 +176,8 @@ impl<T: Hasher> PartialTree<T> {
         }
     }
 
-    pub fn layer_nodes(&self) -> Vec<Vec<T::Hash>> {
-        let hashes: Vec<Vec<T::Hash>> = self
+    pub fn layer_nodes(&self) -> Vec<Vec<H>> {
+        let hashes: Vec<Vec<H>> = self
             .layers()
             .iter()
             .map(|layer| layer.iter().cloned().map(|(_, hash)| hash).collect())
@@ -171,7 +187,7 @@ impl<T: Hasher> PartialTree<T> {
     }
 
     /// Returns partial tree layers
-    pub fn layers(&self) -> &[Vec<(usize, T::Hash)>] {
+    pub fn layers(&self) -> &[Vec<(usize, H)>] {
         &self.layers
     }
 
