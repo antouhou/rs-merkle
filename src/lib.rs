@@ -135,7 +135,7 @@ extern crate std;
 
 pub use error::Error;
 pub use error::ErrorKind;
-pub use hasher::Hasher;
+pub use hasher::{Hash, Hasher};
 pub use merkle_proof::MerkleProof;
 pub use merkle_tree::MerkleTree;
 pub use partial_tree::PartialTree;
