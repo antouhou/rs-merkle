@@ -1,6 +1,6 @@
 use rayon::prelude::*;
 use rs_merkle::{
-    algorithms::{Sha256, Sha384},
+    algorithms::{Keccak256, Sha256, Sha384},
     Hasher, MerkleTree,
 };
 
@@ -14,6 +14,12 @@ pub struct TestData48 {
     pub leaf_values: Vec<String>,
     pub expected_root_hex: String,
     pub leaf_hashes: Vec<[u8; 48]>,
+}
+
+pub struct TestDataKeccak256 {
+    pub leaf_values: Vec<String>,
+    pub expected_root_hex: String,
+    pub leaf_hashes: Vec<[u8; 32]>,
 }
 
 fn combine<T: Clone>(active: Vec<T>, rest: Vec<T>, mut combinations: Vec<Vec<T>>) -> Vec<Vec<T>> {
@@ -64,6 +70,20 @@ pub fn setup_sha384() -> TestData48 {
         .map(|x| Sha384::hash(x.as_bytes()))
         .collect();
     TestData48 {
+        leaf_values: leaf_values.iter().cloned().map(String::from).collect(),
+        leaf_hashes,
+        expected_root_hex: String::from(expected_root_hex),
+    }
+}
+
+pub fn setup_keccak256() -> TestDataKeccak256 {
+    let leaf_values = ["a", "b", "c", "d", "e", "f"];
+    let expected_root_hex = "9012f1e18a87790d2e01faace75aaaca38e53df437cdce2c0552464dda4af49c";
+    let leaf_hashes = leaf_values
+        .iter()
+        .map(|x| Keccak256::hash(x.as_bytes()))
+        .collect();
+    TestDataKeccak256 {
         leaf_values: leaf_values.iter().cloned().map(String::from).collect(),
         leaf_hashes,
         expected_root_hex: String::from(expected_root_hex),
