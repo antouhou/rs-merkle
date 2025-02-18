@@ -1,7 +1,7 @@
 //! This module contains built-in implementations of the [`Hasher`]
 //!
 //! [`Hasher`]: crate::Hasher
-pub mod keccak256;
+mod keccak256;
 mod sha256;
 mod sha384;
 
