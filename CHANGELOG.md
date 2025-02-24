@@ -1,3 +1,11 @@
+# [1.5.0](https://github.com/antouhou/rs-merkle/compare/v1.4.2...v1.5.0) (2025-02-24)
+
+
+### Features
+
+* add support for keccak256 hashes ([#42](https://github.com/antouhou/rs-merkle/pull/42)) ([fc0d001](https://github.com/antouhou/rs-merkle/commit/fc0d001c63d90212c67dfbf2308979715fd5b07e)) (Thanks to @Haxry)
+
+
 # [1.4.2](https://github.com/antouhou/rs-merkle/compare/v1.4.0...v1.4.1) (2024-01-11)
 
 
