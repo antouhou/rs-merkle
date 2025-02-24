@@ -15,6 +15,7 @@ exclude = ["/ci/*", "/scripts/*", "/.github/*", "/bors.toml"]
 
 [dependencies]
 sha2 = { version = "0.10", default-features = false }
+tiny-keccak = { version = "2.0", features = ["keccak"],optional=true }
 
 # standard crate data is left out
 [dev-dependencies]
@@ -23,3 +24,4 @@ rayon = "1.5.1"
 [features]
 default = ['std']
 std = ["sha2/std"]
+keccak256 = ["dep:tiny-keccak"]

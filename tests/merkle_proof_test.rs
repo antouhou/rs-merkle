@@ -3,6 +3,8 @@ mod common;
 pub mod root {
     use crate::common;
     use rayon::prelude::*;
+    #[cfg(feature = "keccak256")]
+    use rs_merkle::algorithms::Keccak256;
     use rs_merkle::{
         algorithms::Sha256, proof_serializers::DirectHashesOrder, Error, MerkleProof, MerkleTree,
     };
@@ -79,6 +81,32 @@ pub mod root {
             test_cases_count,
             test_run_started.elapsed().as_secs_f32()
         );
+
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(feature = "keccak256")]
+    pub fn should_return_a_correct_root_keccak256() -> Result<(), Error> {
+        let test_data = common::setup_keccak256();
+        let expected_root = test_data.expected_root_hex.clone();
+        let leaf_hashes = &test_data.leaf_hashes;
+        let indices_to_prove = vec![3, 4];
+
+        let leaves_to_prove: Vec<[u8; 32]> = indices_to_prove
+            .iter()
+            .map(|i| *leaf_hashes.get(*i).unwrap())
+            .collect();
+
+        let merkle_tree = MerkleTree::<Keccak256>::from_leaves(&test_data.leaf_hashes);
+        let proof = merkle_tree.proof(&indices_to_prove);
+        let extracted_root = proof.root_hex(
+            &indices_to_prove,
+            &leaves_to_prove,
+            test_data.leaf_values.len(),
+        )?;
+
+        assert_eq!(extracted_root, expected_root.to_string());
 
         Ok(())
     }
