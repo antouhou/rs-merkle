@@ -3,10 +3,10 @@ mod common;
 pub mod root {
     use crate::common;
     use rayon::prelude::*;
+    #[cfg(feature = "keccak256")]
+    use rs_merkle::algorithms::Keccak256;
     use rs_merkle::{
-        algorithms::{Keccak256, Sha256},
-        proof_serializers::DirectHashesOrder,
-        Error, MerkleProof, MerkleTree,
+        algorithms::Sha256, proof_serializers::DirectHashesOrder, Error, MerkleProof, MerkleTree,
     };
     use std::time::Instant;
 
@@ -86,6 +86,7 @@ pub mod root {
     }
 
     #[test]
+    #[cfg(feature = "keccak256")]
     pub fn should_return_a_correct_root_keccak256() -> Result<(), Error> {
         let test_data = common::setup_keccak256();
         let expected_root = test_data.expected_root_hex.clone();

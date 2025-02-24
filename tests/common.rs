@@ -1,6 +1,8 @@
 use rayon::prelude::*;
+#[cfg(feature = "keccak256")]
+use rs_merkle::algorithms::Keccak256;
 use rs_merkle::{
-    algorithms::{Keccak256, Sha256, Sha384},
+    algorithms::{Sha256, Sha384},
     Hasher, MerkleTree,
 };
 
@@ -75,7 +77,7 @@ pub fn setup_sha384() -> TestData48 {
         expected_root_hex: String::from(expected_root_hex),
     }
 }
-
+#[cfg(feature = "keccak256")]
 pub fn setup_keccak256() -> TestDataKeccak256 {
     let leaf_values = ["a", "b", "c", "d", "e", "f"];
     let expected_root_hex = "9012f1e18a87790d2e01faace75aaaca38e53df437cdce2c0552464dda4af49c";
