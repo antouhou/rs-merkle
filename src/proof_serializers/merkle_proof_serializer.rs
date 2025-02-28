@@ -1,4 +1,4 @@
-use crate::{prelude::*, Error, Hasher, MerkleProof};
+use crate::{hasher::Hash, prelude::*, Error, MerkleProof};
 
 /// Trait representing a Merkle proof serializer. Used in [`MerkleProof::serialize`] and
 /// [`MerkleProof::deserialize`].
@@ -9,8 +9,8 @@ use crate::{prelude::*, Error, Hasher, MerkleProof};
 /// [`proof_serializers`]: crate::proof_serializers
 pub trait MerkleProofSerializer {
     /// Serialize data from [`MerkleProof`] into a binary
-    fn serialize<T: Hasher>(proof: &MerkleProof<T>) -> Vec<u8>;
+    fn serialize<H: Hash>(proof: &MerkleProof<H>) -> Vec<u8>;
 
     /// Deserialize data produced by [`MerkleProofSerializer::serialize`] back into [`MerkleProof`]
-    fn deserialize<T: Hasher>(bytes: &[u8]) -> Result<MerkleProof<T>, Error>;
+    fn deserialize<H: Hash>(bytes: &[u8]) -> Result<MerkleProof<H>, Error>;
 }
